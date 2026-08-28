@@ -89,9 +89,8 @@ CREATE TABLE public.medecin (
     nom                 VARCHAR(100) NOT NULL,
     prenom              VARCHAR(100) NOT NULL,
     email               VARCHAR(255) NOT NULL UNIQUE,
-    mot_de_passe_hash   VARCHAR(255) NOT NULL,
     telephone           VARCHAR(30),
-    specialite          VARCHAR(100),                 -- chirurgien, oncologue, radiologue, gastro-enterologue...
+    hopital             VARCHAR(150),                 -- hôpital / établissement d'affectation
     date_creation       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
