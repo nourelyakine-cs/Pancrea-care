@@ -13,5 +13,11 @@ class Settings(BaseSettings):
     APP_NAME: str = "PANCRA"
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
+    FRONTEND_URL: str = "http://localhost:3000"
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
+
+    RESEND_API_KEY: str | None = None
+    RESEND_FROM: str = "PANCRA <onboarding@resend.dev>"
+
 
 settings = Settings()
