@@ -63,6 +63,21 @@ def get_decision_detail(db: Session, id_decision: int) -> Decision:
     return get_decision(db, id_decision)
 
 
+def update_decision_medecin(
+    db: Session,
+    id_decision: int,
+    decision_medecin: str,
+    medecin: Medecin | None = None,
+) -> Decision:
+    """Enregistre la décision finale du médecin (ce qu'il a fait) sur une décision."""
+    decision = get_decision(db, id_decision)
+    decision.decision_medecin = decision_medecin
+    db.add(decision)
+    db.commit()
+    db.refresh(decision)
+    return decision
+
+
 def list_decisions(db: Session, id_evaluation: int) -> list[Decision]:
     evaluation = db.get(EvaluationClinique, id_evaluation)
     if evaluation is None:

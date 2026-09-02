@@ -25,6 +25,7 @@ class Decision(Base):
     source_version = Column(String(30))
     snapshot_patient = Column(JSON)
     resume = Column(Text)
+    decision_medecin = Column(Text)
     necessite_rcp = Column(Boolean, default=False)
 
     evaluation = relationship("EvaluationClinique")

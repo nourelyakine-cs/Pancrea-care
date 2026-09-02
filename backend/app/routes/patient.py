@@ -3,11 +3,24 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.medecin import Medecin
+from app.schemas.full_patient import FullPatientCreate, FullPatientRead
 from app.schemas.patient import PatientCreate, PatientRead, PatientUpdate
+from app.services import full_patient as full_patient_service
 from app.services import patient as patient_service
 from app.supabase import get_medecin_for_user
 
 router = APIRouter(prefix="/patients", tags=["patients"])
+
+
+@router.post("/full", response_model=FullPatientRead, status_code=201)
+def create_patient_full(
+    payload: FullPatientCreate,
+    medecin: Medecin = Depends(get_medecin_for_user),
+    db: Session = Depends(get_db),
+):
+    """Crée en une seule requête : patient + dossier + première évaluation
+    (toutes les données) + décision. Répond à la fiche unique de saisie."""
+    return full_patient_service.create_full_patient(db, payload, medecin.id_medecin)
 
 
 @router.post("/", response_model=PatientRead, status_code=201)

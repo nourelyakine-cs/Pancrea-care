@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.medecin import Medecin
-from app.schemas.decision import DecisionDetailRead, DecisionRead
+from app.schemas.decision import DecisionDetailRead, DecisionRead, DecisionUpdate
 from app.services import decision as decision_service
 from app.supabase import get_medecin_for_user
 
@@ -17,6 +17,18 @@ def decide(
     db: Session = Depends(get_db),
 ):
     return decision_service.decide(db, id_evaluation, medecin)
+
+
+@router.put("/{id_decision}", response_model=DecisionDetailRead)
+def update_decision(
+    id_decision: int,
+    payload: DecisionUpdate,
+    medecin: Medecin = Depends(get_medecin_for_user),
+    db: Session = Depends(get_db),
+):
+    return decision_service.update_decision_medecin(
+        db, id_decision, payload.decision_medecin, medecin
+    )
 
 
 @router.get("/evaluations/{id_evaluation}", response_model=list[DecisionRead])

@@ -15,7 +15,14 @@ class DecisionRead(BaseModel):
     source_version: str | None = None
     snapshot_patient: dict[str, Any] | None = None
     resume: str | None = None
+    decision_medecin: str | None = None
     necessite_rcp: bool | None = None
+
+
+class DecisionUpdate(BaseModel):
+    """Mise à jour par le médecin de SA décision finale (ce qu'il a fait)."""
+
+    decision_medecin: str
 
 
 class DecisionDetailRead(DecisionRead):

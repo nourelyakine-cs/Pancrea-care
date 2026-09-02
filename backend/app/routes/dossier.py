@@ -14,6 +14,7 @@ from app.schemas.dossier import (
     MutationRead,
     MutationUpdate,
 )
+from app.schemas.dossier_detail import DossierDetailRead
 from app.services import dossier as dossier_service
 from app.supabase import get_medecin_for_user
 
@@ -40,6 +41,15 @@ def list_dossiers(
     db: Session = Depends(get_db),
 ):
     return dossier_service.list_dossiers(db, statut, id_patient, skip, limit)
+
+
+@router.get("/full/{id_dossier}", response_model=DossierDetailRead)
+def get_dossier_full(
+    id_dossier: int,
+    medecin: Medecin = Depends(get_medecin_for_user),
+    db: Session = Depends(get_db),
+):
+    return dossier_service.get_dossier_detail(db, id_dossier)
 
 
 @router.get("/{id_dossier}", response_model=DossierRead)

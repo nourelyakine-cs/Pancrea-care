@@ -12,5 +12,10 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
 
+    # Mode développement : quand True, les routes protégées sont accessibles
+    # SANS vérification du jeton JWT (utilise un médecin « démo »).
+    # À garder à False en production.
+    DISABLE_AUTH: bool = False
+
 
 settings = Settings()
