@@ -351,7 +351,8 @@ CREATE TABLE public.donnees_derivees (
     critere_abc_a           VARCHAR(30),                       -- = résécabilité, dupliqué pour lisibilité
     critere_abc_b           BOOLEAN,                           -- CA19-9 > 500 ET SANS cholestase
     critere_abc_c           BOOLEAN,                           -- TODO avant production : trancher le seuil ECOG (>=1 ou >=2)
-    sous_categorie_abc      VARCHAR(15),                       -- ex. 'Resecable_A', 'Resecable_AB', 'Resecable_ABC'
+    sous_categorie_abc      VARCHAR(30),                       -- ex. 'Resecable_A', 'Resecable_AB', 'Resecable_ABC'
+    -- Augmentation de sous_categorie_abc à 30 caractères pour éviter les erreurs de troncature des valeurs générées comme 'metastatique_ABC
 
     justification_calcul    TEXT,                              -- explication lisible du calcul
 

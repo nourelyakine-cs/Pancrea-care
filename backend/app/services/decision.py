@@ -6,6 +6,7 @@ from app.models.decision import Decision
 from app.models.evaluation import EvaluationClinique
 from app.models.medecin import Medecin
 from app.services.audit import log_action
+from app.services.clinical_rules.recommendation_service import generate_recommendations
 
 
 def _not_found(msg: str) -> HTTPException:
@@ -22,12 +23,23 @@ def decide(
     if evaluation is None:
         raise _not_found(f"Évaluation {id_evaluation} introuvable.")
 
+    generated = generate_recommendations(db, id_evaluation)
+    recommendations = generated["recommendations"]
+    resume = "\n\n".join(
+        f"{item['code']} — {item['conclusion']}" for item in recommendations
+    ) or "Aucune règle de recommandation déclenchée."
+
     decision = Decision(
         id_evaluation=evaluation.id_evaluation,
         decide_par=medecin.id_medecin if medecin else None,
-        snapshot_patient=None,
-        resume="Décision créée.",
-        necessite_rcp=False,
+        source_code="TNCD-2024",
+        source_version="17/05/2024",
+        snapshot_patient=generated,
+        resume=resume,
+        necessite_rcp=any(
+            item["grade"] in {"B", "accord_experts"}
+            for item in recommendations
+        ),
     )
     db.add(decision)
     try:

@@ -13,6 +13,7 @@ from app.models import (
     traitement,
     decision,
 )  # noqa: F401  (import pour create_all)
+from app.models import donnees_derivees  # noqa: F401  (import pour create_all)
 from app.routes import (
     auth,
     audit as audit_router,
@@ -24,6 +25,7 @@ from app.routes import (
     reference as reference_router,
     traitement as traitement_router,
 )
+from app.routes import clinical_rules as clinical_rules_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -46,6 +48,7 @@ app.include_router(evaluation_router.router)
 app.include_router(traitement_router.router)
 app.include_router(reference_router.router)
 app.include_router(decision_router.router)
+app.include_router(clinical_rules_router.router)
 
 @app.get("/health")
 def health_check():
