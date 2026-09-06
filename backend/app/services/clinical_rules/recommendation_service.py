@@ -14,7 +14,7 @@ from app.models.evaluation import (
 )
 
 from .facts import build_rule_facts
-from .rule_runner import apply_safe
+from .rule_runner import apply_safe, build_decision_path
 
 
 def _load_context(db: Session, id_evaluation: int):
@@ -52,4 +52,15 @@ def _load_context(db: Session, id_evaluation: int):
 def generate_recommendations(db: Session, id_evaluation: int) -> dict[str, Any]:
     evaluation, derived, biology, image, histology = _load_context(db, id_evaluation)
     facts = build_rule_facts(db, evaluation, derived, biology, image, histology)
-    return {"facts": facts, "recommendations": apply_safe(facts)}
+    recommendations = apply_safe(facts)
+    return {
+        "facts": facts,
+        "recommendations": recommendations,
+        # Liste explicite des codes de règles déclenchées (R01-R18, T1-T4...),
+        # exigée par le cahier des charges en plus du détail dans "recommendations".
+        "regles_declenchees": [item["code"] for item in recommendations],
+        # Chemin de décision : trace ordonnée de TOUTES les règles évaluées
+        # (déclenchées, non déclenchées, ou ignorées faute de données), avec
+        # les critères examinés pour chacune.
+        "decision_path": build_decision_path(facts),
+    }

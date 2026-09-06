@@ -10,6 +10,7 @@ from app.models.dossier import DossierPatient
 from app.models.evaluation import (
     Biologie,
     EvaluationClinique,
+    EvaluationComorbidite,
     HistologieBiologie,
     Imagerie,
 )
@@ -23,6 +24,51 @@ def _age(date_naissance: date | None, reference: date | None) -> int | None:
     if (reference.month, reference.day) < (date_naissance.month, date_naissance.day):
         value -= 1
     return value
+
+
+def _comorbidites_lourdes(db: Session, id_evaluation: int) -> bool:
+    """Vrai si au moins une comorbidité de sévérité 'majeure' est liée à l'évaluation.
+
+    Contrairement à l'ECOG ou à l'état nutritionnel, il n'existe pas de valeur
+    « inconnu » explicite pour ce critère (une évaluation sans ligne dans
+    `evaluation_comorbidite` est considérée comme sans comorbidité majeure
+    connue) : ce sous-critère est donc toujours résolu en True/False, jamais None.
+    """
+    return (
+        db.query(EvaluationComorbidite)
+        .filter(
+            EvaluationComorbidite.id_evaluation == id_evaluation,
+            EvaluationComorbidite.severite == "majeure",
+        )
+        .first()
+        is not None
+    )
+
+
+def _patient_non_operable(
+    comorbidites_lourdes: bool,
+    etat_nutritionnel: str | None,
+    ecog: int | None,
+) -> bool | None:
+    """R03 : patient jugé non opérable si comorbidités lourdes, dénutrition
+    sévère et/ou ECOG >= 3 (un seul critère positif suffit).
+
+    - True dès qu'un des trois critères est positif, peu importe les autres.
+    - False seulement si les trois critères sont connus et négatifs.
+    - None (inconnu) si aucun critère n'est positif mais que l'ECOG et/ou
+      l'état nutritionnel ne sont pas renseignés : conformément au reste du
+      moteur (cf. cholestase, statut_dpd...), une donnée manquante ne doit
+      jamais être interprétée comme négative.
+    """
+    etat_severe = etat_nutritionnel == "denutrition_severe"
+    etat_connu = etat_nutritionnel is not None and etat_nutritionnel != "inconnu"
+    ecog_severe = ecog is not None and ecog >= 3
+
+    if comorbidites_lourdes or etat_severe or ecog_severe:
+        return True
+    if etat_connu and ecog is not None:
+        return False
+    return None
 
 
 def build_rule_facts(
@@ -65,8 +111,13 @@ def build_rule_facts(
         "statut_msi_dmmr": histology.statut_msi_dmmr if histology else None,
         "fusion_ntrk": histology.fusion_ntrk if histology else None,
         "fusion_nrg1": histology.fusion_nrg1 if histology else None,
+        # R03 : comorbidités lourdes (sévérité 'majeure') OU dénutrition sévère OU ECOG >= 3.
+        "patient_non_operable": _patient_non_operable(
+            _comorbidites_lourdes(db, evaluation.id_evaluation),
+            evaluation.etat_nutritionnel,
+            evaluation.ecog,
+        ),
         # Not represented by current input tables: intentionally unknown.
-        "patient_non_operable": None,
         "tumeur_controlee": None,
         "nouvelles_metastases": None,
         "duree_chimiotherapie_mois": None,

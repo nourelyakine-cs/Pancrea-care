@@ -9,6 +9,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
+    Enum,
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -39,9 +40,28 @@ class EvaluationClinique(Base):
 class EvaluationComorbidite(Base):
     __tablename__ = "evaluation_comorbidite"
 
-    id_evaluation = Column(Integer, ForeignKey("evaluation_clinique.id_evaluation", ondelete="CASCADE"), primary_key=True)
-    id_comorbidite = Column(Integer, ForeignKey("comorbidite.id_comorbidite"), primary_key=True)
-    severite = Column(String(20), default="mineure")
+    id_evaluation = Column(
+        Integer,
+        ForeignKey("evaluation_clinique.id_evaluation", ondelete="CASCADE"),
+        primary_key=True
+    )
+
+    id_comorbidite = Column(
+        Integer,
+        ForeignKey("comorbidite.id_comorbidite"),
+        primary_key=True
+    )
+
+    severite = Column(
+        Enum(
+            "mineure",
+            "majeure",
+            name="t_severite",
+            create_type=False
+        ),
+        default="mineure"
+    )
+
     note = Column(Text)
 
     evaluation = relationship("EvaluationClinique")

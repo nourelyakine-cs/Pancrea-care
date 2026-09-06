@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,3 +30,53 @@ class DonneesDeriveesRead(BaseModel):
     critere_abc_c: bool | None
     sous_categorie_abc: str | None
     justification_calcul: str | None
+
+
+# --- Explicabilité du moteur de règles (GET .../recommendations) ---------------
+
+
+class RecommendationItem(BaseModel):
+    """Une recommandation déclenchée par une règle (R01-R18, T1-T4...)."""
+
+    code: str = Field(description="Code de la règle déclenchée, ex. 'R01', 'T3'")
+    conclusion: str = Field(description="Justification clinique textuelle de la recommandation")
+    reference: str = Field(description="Référence TNCD justifiant la règle")
+    grade: str = Field(description="Niveau de preuve : 'A', 'B' ou 'accord_experts'")
+    criteres_evalues: dict[str, Any] = Field(
+        description="Valeurs des faits patient qui ont déclenché cette règle"
+    )
+
+
+class DecisionPathStep(BaseModel):
+    """Une étape du chemin de décision : le résultat de l'évaluation d'UNE règle,
+    qu'elle ait été déclenchée, non déclenchée, ou ignorée faute de données."""
+
+    code: str = Field(description="Code de la règle évaluée")
+    statut: str = Field(description="'declenchee', 'non_declenchee' ou 'ignoree'")
+    motif: str | None = Field(default=None, description="Raison si la règle a été ignorée")
+    champs_manquants: list[str] | None = Field(
+        default=None, description="Faits manquants ayant empêché l'évaluation"
+    )
+    reference: str | None = Field(default=None, description="Référence TNCD de la règle")
+    grade: str | None = Field(default=None, description="Niveau de preuve de la règle")
+    criteres_evalues: dict[str, Any] | None = Field(
+        default=None, description="Valeurs des faits patient examinées par cette règle"
+    )
+    nombre_conclusions: int | None = Field(
+        default=None, description="Nombre de recommandations produites par cette règle"
+    )
+
+
+class RecommendationsResponse(BaseModel):
+    """Réponse de GET /clinical-rules/evaluations/{id_evaluation}/recommendations."""
+
+    facts: dict[str, Any] = Field(description="Faits cliniques utilisés en entrée du moteur")
+    recommendations: list[RecommendationItem] = Field(
+        description="Recommandations produites par les règles déclenchées"
+    )
+    regles_declenchees: list[str] = Field(
+        description="Codes des règles déclenchées, ex. ['R01', 'T3']"
+    )
+    decision_path: list[DecisionPathStep] = Field(
+        description="Chemin de décision complet : ordre et résultat de l'évaluation de chaque règle"
+    )

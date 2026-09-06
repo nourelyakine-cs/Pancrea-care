@@ -6,6 +6,7 @@ from app.models.medecin import Medecin
 from app.schemas.clinical_rules import (
     ClinicalRulesCalculateRequest,
     DonneesDeriveesRead,
+    RecommendationsResponse,
 )
 from app.services.clinical_rules.service import calculate_and_persist
 from app.services.clinical_rules.recommendation_service import generate_recommendations
@@ -27,7 +28,10 @@ def calculate_clinical_rules(
     return calculate_and_persist(db, id_evaluation, payload)
 
 
-@router.get("/evaluations/{id_evaluation}/recommendations")
+@router.get(
+    "/evaluations/{id_evaluation}/recommendations",
+    response_model=RecommendationsResponse,
+)
 def get_recommendations(
     id_evaluation: int,
     medecin: Medecin = Depends(get_medecin_for_user),
