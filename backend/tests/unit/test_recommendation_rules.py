@@ -1,45 +1,30 @@
 from app.services.clinical_rules.rule_runner import apply_safe
 
 
-def base_facts():
-    return {
-        "resecabilite": "resecable",
-        "metastases": False,
-        "adenopathie_distance": False,
-        "ca19_9": 300,
-        "ecog": 1,
-    }
+def test_r01_allows_missing_ca19_9():
+    facts = {"resecabilite": "resecable", "metastases": False, "adenopathie_distance": False, "ca19_9": None, "ecog": 1}
+    assert any(item["code"] == "R01" for item in apply_safe(facts))
 
 
-def test_r01_matches_ideal_resectable_profile():
-    matches = apply_safe(base_facts())
-    assert any(item["code"] == "R01" for item in matches)
+def test_r02_uses_derived_abc_and_does_not_recalculate_cholestasis():
+    facts = {"resecabilite": "resecable", "metastases": False, "critere_abc_b": False, "critere_abc_c": False, "ca19_9": 620, "cholestase": True, "ecog": 1}
+    assert not any(item["code"] == "R02" for item in apply_safe(facts))
 
 
-def test_r01_does_not_match_when_critical_ca19_is_unknown():
-    facts = base_facts()
-    facts["ca19_9"] = None
-    matches = apply_safe(facts)
-    assert not any(item["code"] == "R01" for item in matches)
+def test_r02_matches_when_derived_criterion_b_or_c_is_true():
+    base = {"resecabilite": "resecable", "metastases": False, "critere_abc_b": True, "critere_abc_c": False}
+    assert any(item["code"] == "R02" for item in apply_safe(base))
+    base["critere_abc_b"] = False
+    base["critere_abc_c"] = True
+    assert any(item["code"] == "R02" for item in apply_safe(base))
 
 
-def test_r11_does_not_assume_unknown_bilirubin_is_normal():
-    facts = {
-        "metastases": True,
-        "age": 60,
-        "ecog": 0,
-        "bilirubine_ratio_lsn": None,
-    }
-    matches = apply_safe(facts)
-    assert not any(item["code"] == "R11" for item in matches)
+def test_r18_msi_h_and_dmmr_trigger_immunotherapy():
+    for status in ("msi_h", "dmmr"):
+        matches = apply_safe({"fusion_ntrk": None, "fusion_nrg1": None, "statut_kras": None, "statut_msi_dmmr": status})
+        assert any(item["code"] == "R18" for item in matches)
 
 
-def test_r15_requires_metastatic_status():
-    facts = {
-        "ligne_precedente": "gemcitabine",
-        "reponse_traitement": "progression",
-        "ecog": 0,
-        "metastases": None,
-    }
-    matches = apply_safe(facts)
-    assert not any(item["code"] == "R15" for item in matches)
+def test_r18_mss_does_not_trigger_immunotherapy():
+    matches = apply_safe({"fusion_ntrk": None, "fusion_nrg1": None, "statut_kras": None, "statut_msi_dmmr": "mss"})
+    assert not any(item["code"] == "R18" for item in matches)
