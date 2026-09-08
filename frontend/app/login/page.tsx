@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { login, signup } from "@/lib/api";
+
 import authImg from "@/assets/about-doctors.png"; 
 import logoImg from "@/assets/logo.png"; 
 
@@ -14,6 +16,35 @@ export default function AuthPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+
+  const [nom, setNom] = useState("");
+  const [prenom, setPrenom] = useState("");
+  const [telephone, setTelephone] = useState("");
+  const [hopital, setHopital] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      if (isSignUp) {
+        const res = await signup({ nom, prenom, email, password, telephone, hopital });
+        router.push(res.need_email_confirmation ? "/login?mode=confirm" : "/login");
+      } else {
+        const { access_token } = await login(email, password);
+        localStorage.setItem("token", access_token);
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get("mode") === "signup") {
@@ -104,7 +135,7 @@ export default function AuthPage() {
                 </div>
 
                 {/* FORMULAIRE */}
-                <form onSubmit={(e) => e.preventDefault()} className="space-y-3 w-full">
+                <form onSubmit={handleSubmit} className="space-y-3 w-full">
                   
                   <AnimatePresence>
                     {isSignUp && (
@@ -120,6 +151,8 @@ export default function AuthPage() {
                             <input 
                               type="text" 
                               placeholder="Benali" 
+                              value={nom}
+                              onChange={(e) => setNom(e.target.value)}
                               className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                             />
                           </div>
@@ -128,6 +161,8 @@ export default function AuthPage() {
                             <input 
                               type="text" 
                               placeholder="Sofiane" 
+                              value={prenom}
+                              onChange={(e) => setPrenom(e.target.value)}
                               className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                             />
                           </div>
@@ -138,6 +173,8 @@ export default function AuthPage() {
                           <input 
                             type="text" 
                             placeholder="0598765432" 
+                            value={telephone}
+                            onChange={(e) => setTelephone(e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                           />
                         </div>
@@ -147,6 +184,8 @@ export default function AuthPage() {
                           <input 
                             type="text" 
                             placeholder="EHS Aïn Taya" 
+                            value={hopital}
+                            onChange={(e) => setHopital(e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                           />
                         </div>
@@ -159,6 +198,8 @@ export default function AuthPage() {
                     <input 
                       type="email" 
                       placeholder="medecin@pancreacare.dz" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                     />
                   </div>
@@ -168,6 +209,8 @@ export default function AuthPage() {
                     <input 
                       type="password" 
                       placeholder="••••••••" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                     />
                   </div>
@@ -180,11 +223,18 @@ export default function AuthPage() {
                     </div>
                   )}
 
+                  {error && (
+                    <p className="text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {error}
+                    </p>
+                  )}
+
                   <button 
                     type="submit" 
-                    className="w-full py-2.5 bg-[#1D7893] hover:bg-[#209BBF] text-white font-semibold rounded-xl shadow-md transition-all duration-300 mt-2 text-xs"
+                    disabled={isLoading}
+                    className="w-full py-2.5 bg-[#1D7893] hover:bg-[#209BBF] text-white font-semibold rounded-xl shadow-md transition-all duration-300 mt-2 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {isSignUp ? "Créer mon compte" : "Se connecter"}
+                    {isLoading ? "Veuillez patienter..." : (isSignUp ? "Créer mon compte" : "Se connecter")}
                   </button>
                 </form>
 

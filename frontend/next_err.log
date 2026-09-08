@@ -1,0 +1,416 @@
+⨯ ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  [90m1 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m"next/link"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mPhone[0m, [33mMapPin[0m, [33mMail[0m } [36mfrom[0m [32m"lucide-react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mFooter[0m() {
+  [90m5 |[0m   [36mreturn[0m (
+
+
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] Uncaught Error: ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (Error: ./components/Footer.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (Error: (./components/Footer.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+⨯ ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  [90m1 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m"next/link"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mPhone[0m, [33mMapPin[0m, [33mMail[0m } [36mfrom[0m [32m"lucide-react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mFooter[0m() {
+  [90m5 |[0m   [36mreturn[0m (
+
+
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] Uncaught Error: ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (Error: ./components/Footer.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (Error: (./components/Footer.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+⨯ ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  [90m1 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m"next/link"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mPhone[0m, [33mMapPin[0m, [33mMail[0m } [36mfrom[0m [32m"lucide-react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mFooter[0m() {
+  [90m5 |[0m   [36mreturn[0m (
+
+
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] Uncaught Error: ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (Error: ./components/Footer.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (Error: (./components/Footer.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./components/Footer.tsx:2:1
+Error: Module not found: Can't resolve 'lucide-react'
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+
+Import trace:
+  Server Component:
+    ./components/Footer.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+⨯ TypeError: react.createContext is not a function
+    at module evaluation (components\Footer.tsx:2:1)
+    at module evaluation (app\page.tsx:5:1)
+    at module evaluation (C:\Users\INFO\Documents\final version stage hoptal\Pancrea-care\frontend\.next\dev\server\chunks\ssr\[root-of-the-server]__138wyhg._.js:84:47)
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+⨯ TypeError: createContext only works in Client Components. Add the "use client" directive at the top of the file to use it. Read more: https://nextjs.org/docs/messages/context-in-server-component
+    at module evaluation (components\Footer.tsx:2:1)
+    at module evaluation (app\page.tsx:5:1)
+    at module evaluation (C:\Users\INFO\Documents\final version stage hoptal\Pancrea-care\frontend\.next\dev\server\chunks\ssr\[root-of-the-server]__138wyhg._.js:84:47)
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^
+  3 |
+  4 | export default function Footer() {
+  5 |   return ( {
+  page: '/'
+}
+⨯ TypeError: createContext only works in Client Components. Add the "use client" directive at the top of the file to use it. Read more: https://nextjs.org/docs/messages/context-in-server-component
+    at module evaluation (components\Footer.tsx:2:1)
+    at module evaluation (app\page.tsx:5:1)
+    at module evaluation (C:\Users\INFO\Documents\final version stage hoptal\Pancrea-care\frontend\.next\dev\server\chunks\ssr\[root-of-the-server]__138wyhg._.js:84:47)
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^
+  3 |
+  4 | export default function Footer() {
+  5 |   return ( {
+  page: '/'
+}
+⨯ TypeError: createContext only works in Client Components. Add the "use client" directive at the top of the file to use it. Read more: https://nextjs.org/docs/messages/context-in-server-component
+    at module evaluation (components\Footer.tsx:2:1)
+    at module evaluation (app\page.tsx:5:1)
+    at module evaluation (C:\Users\INFO\Documents\final version stage hoptal\Pancrea-care\frontend\.next\dev\server\chunks\ssr\[root-of-the-server]__138wyhg._.js:84:47)
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^
+  3 |
+  4 | export default function Footer() {
+  5 |   return ( {
+  page: '/'
+}
+[browser] Uncaught TypeError: createContext only works in Client Components. Add the "use client" directive at the top of the file to use it. Read more: https://nextjs.org/docs/messages/context-in-server-component
+    at module evaluation (components/Footer.tsx:2:1)
+    at module evaluation (app/page.tsx:5:1)
+    at module evaluation (app/page.tsx:18:1)
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+[browser] Uncaught TypeError: createContext only works in Client Components. Add the "use client" directive at the top of the file to use it. Read more: https://nextjs.org/docs/messages/context-in-server-component
+    at module evaluation (components/Footer.tsx:2:1)
+    at module evaluation (app/page.tsx:5:1)
+    at module evaluation (app/page.tsx:18:1)
+  1 | import Link from "next/link";
+> 2 | import { Phone, MapPin, Mail } from "lucide-react";
+    | ^
+  3 |
+  4 | export default function Footer() {
+  5 |   return (
+[browser] Image with src "/_next/static/media/service-pancreas.3bbu20xpcdlg2.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/_next/static/media/folder.37ve134r8r3bt.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/_next/static/media/service-tncd.0njp11594ta3n.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[browser] Image with src "/_next/static/media/about-doctors.0d7d7ezxf3dpj.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/_next/static/media/logo.2knwgnm2ys_29.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[browser] Image with src "/_next/static/media/logo.2knwgnm2ys_29.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+^C^C
