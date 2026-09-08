@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from supabase_auth.errors import AuthApiError
 
+from app.config import settings
 from app.database import get_db
 from app.models.medecin import Medecin
 from app.supabase import get_current_user, supabase
@@ -72,7 +73,13 @@ class LoginRequest(BaseModel):
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     try:
         res = supabase.auth.sign_up(
-            {"email": payload.email, "password": payload.password}
+            {
+                "email": payload.email,
+                "password": payload.password,
+                "options": {
+                    "email_redirect_to": f"{settings.FRONTEND_URL}/login",
+                },
+            }
         )
     except Exception as exc:
         raise _auth_error(exc)
@@ -114,6 +121,38 @@ def login(payload: LoginRequest):
         "access_token": res.session.access_token,
         "token_type": "bearer",
     }
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    access_token: str
+    refresh_token: str
+    new_password: str
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest):
+    try:
+        supabase.auth.reset_password_for_email(
+            payload.email,
+            {"redirect_to": f"{settings.FRONTEND_URL}/reset-password"},
+        )
+    except Exception as exc:
+        raise _auth_error(exc)
+    return {"message": "Email de réinitialisation envoyé."}
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest):
+    try:
+        supabase.auth.set_session(payload.access_token, payload.refresh_token)
+        supabase.auth.update_user({"password": payload.new_password})
+    except Exception as exc:
+        raise _auth_error(exc)
+    return {"message": "Mot de passe mis à jour."}
 
 
 @router.get("/me")
