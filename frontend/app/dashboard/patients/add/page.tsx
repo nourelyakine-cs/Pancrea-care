@@ -8,6 +8,10 @@ import Step4Imagerie from "./components/Step4Imagerie";
 import Step5Tnm from "./components/Step5Tnm";
 import Step6Histologie from "./components/Step6Histologie";
 import Step7Parcours from "./components/Step7Parcours";
+import Step8Calcul from "./components/Step8Calcul";
+import EvaluationPage from "../../evaluation/page";
+
+import { CheckCircle2, ArrowLeft } from "lucide-react";
 
 export default function AddPatientPage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -15,25 +19,18 @@ export default function AddPatientPage() {
 
   // État global complet
   const [patientData, setPatientData] = useState({
-    // A.1 Démographie
     nom: "", prenom: "", dateNaissance: "", sexe: "", telephone: "", adresse: "", age: "",
-    // A.2 État Clinique
     ecog: 0, etatNutritionnel: "normal", comorbiditesLourdes: false, douleur: "absente",
     intensiteDouleur: "", ictere: false, angiocholite: false, diabete: "absent", cholestase: false,
     patientNonOperable: false,
-    // A.3 Biologie
     ca199: "", bilirubine: "", lsnBilirubine: 21, statutDpd: "normal", albuminemie: "",
-    // A.4 Imagerie
     localisationTumorale: "tête/crochet", tailleTumorale: "", contactAms: "pas de contact",
     contactTroncCoeliaque: "pas de contact", contactAhc: "pas de contact",
     contactVmsVp: "<180° sans irrégularité", adenopathieRegionale: false,
     adenopathieDistance: false, metastases: false,
-    // TNM
     categorieT: "T1a", categorieN: "N0", categorieM: "M0",
-    // A.6 Histologie & Biologie Moléculaire
     preuveHistologique: false, statutBrca: "non testé", statutKras: "non testé",
     statutMsiDmmr: "non testé", fusionNtrk: "non testé", fusionNrg1: "non testé",
-    // A.7 Parcours Thérapeutique
     ligneTraitementActuelle: 1, reponseTraitementEnCours: "stable", traitementsRecusTexte: "",
     traitementsRecus: [], lignePrecedente: "", dureeChimiotherapieMois: "",
     tumeurControle: false, nouvellesMetastases: false, chirurgieDembleePrevue: false,
@@ -41,43 +38,14 @@ export default function AddPatientPage() {
     toxiciteResiduelle: false, detailsToxicite: "",
   });
 
-  // --- REGLES DE VALIDATION POUR CHAQUE ÉTAPE ---
-  const isStep1Valid = Boolean(
-    patientData.nom.trim() &&
-    patientData.prenom.trim() &&
-    patientData.sexe &&
-    patientData.dateNaissance
-  );
+  const isStep1Valid = Boolean(patientData.nom.trim() && patientData.prenom.trim() && patientData.sexe && patientData.dateNaissance);
+  const isStep2Valid = Boolean(patientData.etatNutritionnel && patientData.douleur);
+  const isStep3Valid = Boolean(patientData.ca199 !== "" && patientData.bilirubine !== "");
+  const isStep4Valid = Boolean(patientData.localisationTumorale && patientData.tailleTumorale !== "");
+  const isStep5Valid = Boolean(patientData.categorieT && patientData.categorieN && patientData.categorieM);
+  const isStep6Valid = true;
+  const isStep7Valid = Boolean(patientData.ligneTraitementActuelle && patientData.reponseTraitementEnCours);
 
-  const isStep2Valid = Boolean(
-    patientData.etatNutritionnel &&
-    patientData.douleur
-  );
-
-  const isStep3Valid = Boolean(
-    patientData.ca199 !== "" &&
-    patientData.bilirubine !== ""
-  );
-
-  const isStep4Valid = Boolean(
-    patientData.localisationTumorale &&
-    patientData.tailleTumorale !== ""
-  );
-
-  const isStep5Valid = Boolean(
-    patientData.categorieT &&
-    patientData.categorieN &&
-    patientData.categorieM
-  );
-
-  const isStep6Valid = true; // Définir des conditions si nécessaire (ex: patientData.preuveHistologique !== null)
-
-  const isStep7Valid = Boolean(
-    patientData.ligneTraitementActuelle &&
-    patientData.reponseTraitementEnCours
-  );
-
-  // Fonction pour vérifier la validité d'une étape spécifique
   const isStepValid = (stepNumber: number): boolean => {
     switch (stepNumber) {
       case 1: return isStep1Valid;
@@ -87,11 +55,10 @@ export default function AddPatientPage() {
       case 5: return isStep5Valid;
       case 6: return isStep6Valid;
       case 7: return isStep7Valid;
-      default: return false;
+      default: return true;
     }
   };
 
-  // Vérifie si TOUTES les étapes précédentes sont valides
   const canAccessStep = (targetStep: number): boolean => {
     if (targetStep === 1) return true;
     for (let i = 1; i < targetStep; i++) {
@@ -105,12 +72,10 @@ export default function AddPatientPage() {
   };
 
   const handleNextStep = (nextStep: number) => {
-    // Vérifie que l'étape actuelle est valide avant de passer à la suivante
     if (!isStepValid(currentStep)) {
       alert("Veuillez remplir correctement tous les champs obligatoires de cette étape avant de continuer.");
       return;
     }
-
     setCurrentStep(nextStep);
     if (nextStep > maxReachedStep) {
       setMaxReachedStep(nextStep);
@@ -118,7 +83,6 @@ export default function AddPatientPage() {
   };
 
   const handleStepClick = (targetStep: number) => {
-    // Empêche le clic direct sur une étape future si les étapes précédentes ne sont pas valides
     if (!canAccessStep(targetStep)) {
       alert("Vous devez d'abord compléter toutes les étapes précédentes.");
       return;
@@ -127,17 +91,12 @@ export default function AddPatientPage() {
   };
 
   const handleSubmitFinal = () => {
-    // Vérification finale globale
-    if (!canAccessStep(7) || !isStep7Valid) {
-      alert("Erreur : Des étapes ou informations obligatoires sont encore incomplètes.");
-      return;
-    }
-    console.log("Données complètes du patient soumises :", patientData);
+    console.log("Dossier patient et calculs enregistrés avec succès :", patientData);
+    alert("Le patient et son évaluation ont été enregistrés avec succès !");
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 font-serif">
-      
+    <div className="max-w-5xl mx-auto space-y-6 font-serif">
       {/* STEPPER INTERACTIF */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between text-xs overflow-x-auto">
         {[
@@ -148,6 +107,8 @@ export default function AddPatientPage() {
           { step: 5, label: "TNM" },
           { step: 6, label: "Histologie" },
           { step: 7, label: "Parcours" },
+          { step: 8, label: "Calculs CDSS" },
+          { step: 9, label: "Évaluation" },
         ].map((item, idx, arr) => {
           const isCompleted = isStepValid(item.step) && maxReachedStep > item.step;
           const isCurrent = currentStep === item.step;
@@ -180,15 +141,41 @@ export default function AddPatientPage() {
         })}
       </div>
 
-      {/* RENDU DES COMPOSANTS */}
+      {/* COMPOSANTS DE CHAQUE ÉTAPE */}
       {currentStep === 1 && <Step1Demographie data={patientData} updateData={updateData} onNext={() => handleNextStep(2)} />}
       {currentStep === 2 && <Step2EtatClinique data={patientData} updateData={updateData} onNext={() => handleNextStep(3)} onPrev={() => setCurrentStep(1)} />}
       {currentStep === 3 && <Step3Biologie data={patientData} updateData={updateData} onNext={() => handleNextStep(4)} onPrev={() => setCurrentStep(2)} />}
       {currentStep === 4 && <Step4Imagerie data={patientData} updateData={updateData} onNext={() => handleNextStep(5)} onPrev={() => setCurrentStep(3)} />}
       {currentStep === 5 && <Step5Tnm data={patientData} updateData={updateData} onNext={() => handleNextStep(6)} onPrev={() => setCurrentStep(4)} />}
       {currentStep === 6 && <Step6Histologie data={patientData} updateData={updateData} onNext={() => handleNextStep(7)} onPrev={() => setCurrentStep(5)} />}
-      {currentStep === 7 && <Step7Parcours data={patientData} updateData={updateData} onSubmitFinal={handleSubmitFinal} onPrev={() => setCurrentStep(6)} />}
+      {currentStep === 7 && <Step7Parcours data={patientData} updateData={updateData} onSubmitFinal={() => handleNextStep(8)} onPrev={() => setCurrentStep(6)} />}
+      
+      {/* ÉTAPE 8 ISOLÉE */}
+      {currentStep === 8 && <Step8Calcul onPrev={() => setCurrentStep(7)} onNext={() => handleNextStep(9)} />}
 
+      {/* ÉTAPE 9 : ÉVALUATION ET BOUTON FINAL */}
+      {currentStep === 9 && (
+        <div className="space-y-6">
+          <EvaluationPage />
+
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => setCurrentStep(8)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50"
+            >
+              <ArrowLeft className="w-4 h-4" /> Modifier les Calculs
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitFinal}
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg transition-all"
+            >
+              <CheckCircle2 className="w-5 h-5" /> Enregistrer Définitivement le Patient
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

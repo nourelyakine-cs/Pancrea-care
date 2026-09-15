@@ -293,16 +293,7 @@ export default function PatientsPage() {
                         </svg>
                         Update Patient
                       </Link>
-                     <Link
-  href={`/dashboard/evaluation?patientId=${patient.id}`}
-  className="flex items-center gap-2 px-4 py-2 hover:bg-cyan-50 text-[#1D7893] font-medium transition"
-  onClick={() => setOpenMenuId(null)}
->
-  <svg className="w-4 h-4 text-[#1D7893]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  Add Evaluation
-</Link>
+                     
                     </div>
                   )}
                 </div>
