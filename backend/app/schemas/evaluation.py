@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 # --- Évaluation clinique ----------------------------------------------------
@@ -9,24 +10,24 @@ from pydantic import BaseModel, ConfigDict
 
 class EvaluationCreate(BaseModel):
     date_evaluation: date
-    contexte: str = "diagnostic"
+    contexte: Literal["diagnostic", "pre_neoadjuvant", "restaging", "pre_chirurgie", "adjuvant", "surveillance", "recidive"] = "diagnostic"
     ecog: int | None = None
-    etat_nutritionnel: str = "inconnu"
+    etat_nutritionnel: Literal["normal", "denutrition_moderee", "denutrition_severe", "inconnu"] = "inconnu"
     douleur_presente: bool | None = None
     intensite_douleur: int | None = None
     ictere: bool | None = None
-    diabete: str = "inconnu"
+    diabete: Literal["absent", "recent_moins_2ans", "ancien", "inconnu"] = "inconnu"
 
 
 class EvaluationUpdate(BaseModel):
     date_evaluation: date | None = None
-    contexte: str | None = None
+    contexte: Literal["diagnostic", "pre_neoadjuvant", "restaging", "pre_chirurgie", "adjuvant", "surveillance", "recidive"] | None = None
     ecog: int | None = None
-    etat_nutritionnel: str | None = None
+    etat_nutritionnel: Literal["normal", "denutrition_moderee", "denutrition_severe", "inconnu"] | None = None
     douleur_presente: bool | None = None
     intensite_douleur: int | None = None
     ictere: bool | None = None
-    diabete: str | None = None
+    diabete: Literal["absent", "recent_moins_2ans", "ancien", "inconnu"] | None = None
 
 
 class EvaluationRead(BaseModel):
@@ -55,8 +56,8 @@ class BiologieCreate(BaseModel):
     cholestase: bool | None = None
     bilirubine: Decimal | None = None
     bilirubine_ratio_lsn: Decimal | None = None
-    statut_lewis: str = "inconnu"
-    statut_dpd: str = "non_teste"
+    statut_lewis: Literal["exprime", "a_b_negatif", "inconnu"] = "inconnu"
+    statut_dpd: Literal["normal", "deficit_partiel", "deficit_complet", "non_teste"] = "non_teste"
     albuminemie: Decimal | None = None
     date_analyse: date | None = None
 
@@ -67,8 +68,8 @@ class BiologieUpdate(BaseModel):
     cholestase: bool | None = None
     bilirubine: Decimal | None = None
     bilirubine_ratio_lsn: Decimal | None = None
-    statut_lewis: str | None = None
-    statut_dpd: str | None = None
+    statut_lewis: Literal["exprime", "a_b_negatif", "inconnu"] | None = None
+    statut_dpd: Literal["normal", "deficit_partiel", "deficit_complet", "non_teste"] | None = None
     albuminemie: Decimal | None = None
     date_analyse: date | None = None
 
@@ -84,14 +85,14 @@ class BiologieRead(BiologieCreate):
 
 
 class ImagerieCreate(BaseModel):
-    type_imagerie: str
+    type_imagerie: Literal["TDM", "IRM"]
     date_imagerie: date
-    localisation_tumorale: str = "inconnu"
+    localisation_tumorale: Literal["tete_crochet", "corps_queue", "inconnu"] = "inconnu"
     taille_tumorale_cm: Decimal | None = None
-    contact_ams: str | None = None
-    contact_tronc_coeliaque: str | None = None
-    contact_art_hepatique: str | None = None
-    contact_vms_vp: str | None = None
+    contact_ams: Literal["absent", "lt180", "ge180"] | None = None
+    contact_tronc_coeliaque: Literal["absent", "lt180", "ge180"] | None = None
+    contact_art_hepatique: Literal["absent", "court_sans_envahissement", "envahissant"] | None = None
+    contact_vms_vp: Literal["absent", "lt180_sans_irregularite", "ge180_ou_irregularite", "occlusion_reconstructible", "occlusion_non_reconstructible"] | None = None
     extension_ganglionnaire_regionale: bool = False
     extension_ganglionnaire_distance: bool | None = None
     metastases_presentes: bool | None = None
@@ -145,11 +146,31 @@ class MetastaseRead(BaseModel):
 
 class HistologieCreate(BaseModel):
     preuve_histologique: bool = False
-    statut_brca_germinal: str = "non_teste"
-    statut_kras: str = "non_teste"
-    statut_msi_dmmr: str = "non_teste"
-    fusion_ntrk: str = "non_teste"
-    fusion_nrg1: str = "non_teste"
+    statut_brca_germinal: Literal["mute", "non_mute", "non_teste"] = "non_teste"
+    statut_kras: Literal["sauvage", "g12c", "g12d", "g12v", "autre_mute", "non_teste"] = "non_teste"
+    statut_msi_dmmr: Literal["mss", "msi_h", "dmmr", "non_teste"] = "non_teste"
+    fusion_ntrk: Literal["positif", "negatif", "non_teste"] = "non_teste"
+    fusion_nrg1: Literal["positif", "negatif", "non_teste"] = "non_teste"
+
+    @field_validator("statut_brca_germinal", mode="before")
+    @classmethod
+    def normalize_brca(cls, value: object) -> object:
+        return {"muté": "mute", "non muté": "non_mute", "non testé": "non_teste"}.get(value, value)
+
+    @field_validator("statut_kras", mode="before")
+    @classmethod
+    def normalize_kras(cls, value: object) -> object:
+        return {"G12C": "g12c", "G12D": "g12d", "G12V": "g12v", "autre": "autre_mute", "non testé": "non_teste"}.get(value, value)
+
+    @field_validator("statut_msi_dmmr", mode="before")
+    @classmethod
+    def normalize_msi(cls, value: object) -> object:
+        return {"positif": "msi_h", "négatif": "mss", "non testé": "non_teste"}.get(value, value)
+
+    @field_validator("fusion_ntrk", "fusion_nrg1", mode="before")
+    @classmethod
+    def normalize_fusion(cls, value: object) -> object:
+        return {"oui": "positif", "non": "negatif", "non testé": "non_teste"}.get(value, value)
 
 
 class HistologieUpdate(BaseModel):

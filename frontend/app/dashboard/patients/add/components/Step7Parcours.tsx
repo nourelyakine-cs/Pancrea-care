@@ -5,11 +5,13 @@ import { ChangeEvent } from "react";
 interface Step7Props {
   data: any;
   updateData: (fields: Partial<any>) => void;
+  submitting?: boolean;
+  error?: string | null;
   onSubmitFinal: () => void; // Correspond à la transition vers l'étape 8
   onPrev: () => void;
 }
 
-export default function Step7Parcours({ data, updateData, onSubmitFinal, onPrev }: Step7Props) {
+export default function Step7Parcours({ data, updateData, submitting = false, error = null, onSubmitFinal, onPrev }: Step7Props) {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -210,11 +212,13 @@ export default function Step7Parcours({ data, updateData, onSubmitFinal, onPrev 
         >
           ← Précédent : Histologie
         </button>
+        {error && <p role="alert" className="max-w-xs text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
         <button
           type="submit"
+          disabled={submitting}
           className="px-6 py-2.5 bg-[#1D7893] hover:bg-[#155b70] text-white text-xs font-semibold rounded-xl shadow-md transition flex items-center gap-2"
         >
-          <span>Étape suivante : Calculs CDSS →</span>
+          <span>{submitting ? "Calcul en cours…" : "Étape suivante : Calculs CDSS →"}</span>
         </button>
       </div>
     </form>

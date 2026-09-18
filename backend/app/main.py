@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import Base, engine
 from app.models import (
     medecin,
     patient,
@@ -27,13 +26,16 @@ from app.routes import (
 )
 from app.routes import clinical_rules as clinical_rules_router
 
-Base.metadata.create_all(bind=engine)
+# Le schéma est géré par Supabase via backend/database/*.sql et ses migrations.
+# Ne pas exécuter create_all() à l’import : cela rendrait /health et /docs
+# indisponibles dès qu’une URL DATABASE_URL est temporairement inaccessible.
 
 app = FastAPI(title=settings.APP_NAME, environment=settings.ENVIRONMENT)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

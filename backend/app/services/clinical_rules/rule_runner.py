@@ -24,7 +24,8 @@ _DISPLAY_ONLY = {"R18": {"fusion_ntrk", "fusion_nrg1", "statut_kras", "statut_ms
 
 
 def _criteria_fields(code: str) -> set[str]:
-    return _REQUIRED.get(code) or _DISPLAY_ONLY.get(code, set())
+    fields = _REQUIRED.get(code) or _DISPLAY_ONLY.get(code, set())
+    return fields | {"ca19_9"} if code == "R01" else fields
 
 
 def _flat(result: Any) -> list[Any]:

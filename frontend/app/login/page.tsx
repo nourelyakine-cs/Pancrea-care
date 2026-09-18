@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import authImg from "@/assets/about-doctors.png"; 
 import logoImg from "@/assets/logo.png"; 
 
-export default function AuthPage() {
+function AuthPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -241,4 +241,8 @@ export default function AuthPage() {
       )}
     </AnimatePresence>
   );
+}
+
+export default function AuthPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-[#EAF4F7]" />}><AuthPageContent /></Suspense>;
 }
