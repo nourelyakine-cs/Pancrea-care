@@ -1,7 +1,9 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from supabase_auth.errors import AuthApiError
+from supabase_auth.errors import AuthApiError, AuthSessionMissingError, UserDoesntExist
 
 from app.config import settings
 from app.database import get_db
@@ -9,6 +11,8 @@ from app.models.medecin import Medecin
 from app.supabase import get_current_user, supabase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+logger = logging.getLogger(__name__)
 
 
 def _auth_error(exc: Exception) -> HTTPException:
@@ -48,7 +52,17 @@ def _auth_error(exc: Exception) -> HTTPException:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=exc.message or "Erreur d'authentification.",
         )
+    if isinstance(exc, (IndexError, AuthSessionMissingError, UserDoesntExist)):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Lien de réinitialisation invalide ou expiré. Relancez la procédure.",
+        )
     # erreur inattendue / d'infrastructure
+    logger.exception(
+        "Erreur d'authentification non catégorisée (%s): %s",
+        type(exc).__name__,
+        exc,
+    )
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail="Le service d'authentification est momentanément indisponible.",
