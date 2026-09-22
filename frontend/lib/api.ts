@@ -20,6 +20,35 @@ export type FullCreationResult = {
   id_decision: number;
 };
 
+export type RecommendationsResponse = {
+  id_decision?: number;
+  id_evaluation?: number;
+  date_decision?: string;
+  source_code?: string;
+  source_version?: string;
+  necessite_rcp?: boolean;
+  facts?: Record<string, any>;
+  recommendations: Array<{
+    code: string;
+    titre?: string;
+    conclusion: string;
+    reference: string;
+    grade: string;
+    criteres_evalues: Record<string, any>;
+  }>;
+  regles_declenchees: string[];
+  decision_path: Array<{
+    code: string;
+    statut: string;
+    motif?: string;
+    champs_manquants?: string[];
+    reference?: string;
+    grade?: string;
+    criteres_evalues?: Record<string, any>;
+    nombre_conclusions?: number;
+  }>;
+};
+
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 async function request<T>(path: string, init: RequestInit): Promise<T> {
@@ -28,7 +57,11 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.headers || {}) },
+      headers: { 
+        "Content-Type": "application/json", 
+        ...(token ? { Authorization: `Bearer ${token}` } : {}), 
+        ...(init.headers || {}) 
+      },
     });
   } catch {
     throw new Error(`Backend inaccessible (${API_URL}). Vérifiez que FastAPI est lancé et que NEXT_PUBLIC_API_URL est correct.`);
@@ -157,6 +190,12 @@ export async function createPatientAndCalculate(data: any) {
     }),
   });
   return { created, calculated };
+}
+
+export async function getRecommendations(idEvaluation: number) {
+  return request<RecommendationsResponse>(`/clinical-rules/evaluations/${idEvaluation}/recommendations`, {
+    method: "GET",
+  });
 }
 
 export async function login(email: string, password: string) {
