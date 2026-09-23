@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { getPatients } from "@/lib/api";
 
 export interface PatientData {
   // A.1 Démographie
@@ -78,123 +79,70 @@ export interface PatientData {
   detailsToxicite?: string;
 }
 
-const INITIAL_PATIENTS: PatientData[] = [
-  {
-    id: "PAT-2026-001",
-    nom: "Benali",
-    prenom: "Mohamed",
-    telephone: "0550 12 34 56",
-    adresse: "Alger, Bab El Oued",
-    dateNaissance: "14/03/1964",
-    sexe: "M",
-    age: 62,
-    ecog: 1,
-    etatNutritionnel: "normal",
-    comorbiditesLourdes: false,
-    douleur: "présente",
-    intensiteDouleur: "Modérée (4/10)",
-    ictere: false,
-    angiocholite: false,
-    diabete: "absent",
-    cholestase: false,
-    ca199: 120,
-    bilirubine: 15,
-    lsnBilirubine: 17,
-    statutDpd: "normal",
-    albuminemie: 42,
-    localisationTumorale: "tete_crochet",
-    tailleTumorale: 2.5,
-    contactAms: "pas de contact",
-    contactTroncCoeliaque: "pas de contact",
-    contactAhc: "pas de contact",
-    contactVmsVp: "<180° sans irregularite",
-    adenopathieRegionale: true,
-    adenopathieDistance: false,
-    metastases: false,
-    categorieT: "T2",
-    categorieN: "N1",
-    categorieM: "M0",
-    preuveHistologique: true,
-    statutBrca: "non muté",
-    statutKras: "G12D",
-    statutMsiDmmr: "négatif",
-    fusionNtrk: "non",
-    fusionNrg1: "non testé",
-    ligneTraitementActuelle: 1,
-    reponseTraitementEnCours: "stable",
-    traitementsRecus: ["FOLFIRINOX"],
-    dureeChimiotherapieMois: 5,
-    tumeurControle: true,
-    nouvellesMetastases: false,
-    chirurgieDembleePrevue: false,
-    traitementMedicalPrevu: true,
-    pasDeProgressionApres16SemainesPlatine: true,
-    toxiciteResiduelle: false,
-  },
-  {
-    id: "PAT-2026-002",
-    nom: "Khadraoui",
-    prenom: "Amina",
-    telephone: "0661 98 76 54",
-    adresse: "Oran, Centre ville",
-    dateNaissance: "20/08/1951",
-    sexe: "F",
-    age: 75,
-    ecog: 2,
-    etatNutritionnel: "dénutrition modérée",
-    comorbiditesLourdes: true,
-    douleur: "présente",
-    intensiteDouleur: "Sévère (7/10)",
-    ictere: true,
-    angiocholite: false,
-    diabete: "récent (<2 ans)",
-    cholestase: true,
-    ca199: 620,
-    bilirubine: 48,
-    lsnBilirubine: 21,
-    statutDpd: "déficit partiel",
-    albuminemie: 31,
-    localisationTumorale: "corps_queue",
-    tailleTumorale: 3.8,
-    contactAms: ">=180°",
-    contactTroncCoeliaque: "<180°",
-    contactAhc: "court reconstructible",
-    contactVmsVp: ">=180° ou irregularite ou occlusion reconstructible",
-    adenopathieRegionale: true,
-    adenopathieDistance: true,
-    metastases: true,
-    siteMetastases: ["hepatique", "pulmonaire"],
-    categorieT: "T4",
-    categorieN: "N1",
-    categorieM: "M1",
-    preuveHistologique: true,
-    statutBrca: "muté",
-    statutKras: "G12C",
-    statutMsiDmmr: "positif",
-    fusionNtrk: "oui",
-    fusionNrg1: "non",
-    ligneTraitementActuelle: 2,
-    reponseTraitementEnCours: "progression",
-    traitementsRecus: ["Gemcitabine", "FOLFIRINOX"],
-    dureeChimiotherapieMois: 3,
-    tumeurControle: false,
-    nouvellesMetastases: true,
-    chirurgieDembleePrevue: false,
-    traitementMedicalPrevu: true,
-    pasDeProgressionApres16SemainesPlatine: false,
-    toxiciteResiduelle: true,
-    detailsToxicite: "Neuropathie périphérique de grade 2",
-  },
-];
+function computeAge(dateNaissance: string): number {
+  const birth = new Date(dateNaissance);
+  if (Number.isNaN(birth.getTime())) return 0;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age -= 1;
+  return age;
+}
+
+function formatDateNaissance(value: string | null): string {
+  if (!value) return "";
+  return value.split("T")[0];
+}
 
 export default function PatientsPage() {
-  const [patients] = useState<PatientData[]>(INITIAL_PATIENTS);
+  const [patients, setPatients] = useState<PatientData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
   const [activeTab, setActiveTab] = useState<"demo" | "clinique" | "bio" | "imagerie" | "tnm" | "histo" | "parcours">("demo");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
+    getPatients()
+      .then((list) => {
+        if (!active) return;
+        setPatients(
+          list.map((p) => ({
+            id: String(p.id_patient),
+            nom: p.nom,
+            prenom: p.prenom,
+            telephone: p.telephone ?? "",
+            adresse: p.adresse ?? "",
+            dateNaissance: formatDateNaissance(p.date_naissance),
+            sexe: p.sexe === "F" ? "F" : "M",
+            age: computeAge(p.date_naissance ?? ""),
+            categorieT: p.categorie_t ?? undefined,
+            categorieN: p.categorie_n ?? undefined,
+            categorieM: p.categorie_m ?? undefined,
+          })),
+        );
+      })
+      .catch((cause: unknown) => {
+        if (!active) return;
+        const detail =
+          typeof cause === "object" && cause !== null && "detail" in cause
+            ? String((cause as { detail: unknown }).detail)
+            : "Impossible de charger la liste des patients.";
+        setLoadError(detail);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Ferme le menu contextuel si on clique à l'extérieur
   useEffect(() => {
@@ -251,7 +199,32 @@ export default function PatientsPage() {
       </div>
 
       {/* LISTE DES PATIENTS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-sm text-gray-500">
+          Chargement des patients…
+        </div>
+      ) : loadError ? (
+        <div className="bg-red-50 rounded-2xl border border-red-200 p-6 text-center">
+          <p className="text-sm font-semibold text-red-700 mb-2">Erreur de chargement</p>
+          <p className="text-xs text-red-600 mb-4">{loadError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#1D7893] hover:bg-[#209BBF] text-white text-xs font-semibold rounded-xl transition"
+          >
+            Réessayer
+          </button>
+        </div>
+      ) : filteredPatients.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+          <p className="text-sm font-semibold text-[#1F3D4D] mb-1">Aucun patient trouvé</p>
+          <p className="text-xs text-gray-500">
+            {patients.length === 0
+              ? "Aucun patient enregistré. Créez un premier dossier via « Nouveau Patient »."
+              : "Aucun résultat pour cette recherche."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredPatients.map((patient) => (
           <div key={patient.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between relative">
             <div>
@@ -329,7 +302,8 @@ export default function PatientsPage() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* MODAL COMPLÈTE */}
       <AnimatePresence>

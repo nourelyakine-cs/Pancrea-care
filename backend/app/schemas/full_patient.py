@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.models.enums import Sexe
 from app.schemas.dossier import AntecedentCreate, MutationCreate
 from app.schemas.evaluation import (
     AnalyseCreate,
@@ -27,11 +28,13 @@ class FullEvaluationCreate(EvaluationCreate):
 
 
 class FullPatientCreate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     # --- identité / dossier ---
     nom: str
     prenom: str
     date_naissance: date | None = None
-    sexe: str | None = None
+    sexe: Sexe | None = None
     telephone: str | None = None
     email: EmailStr | None = None
     adresse: str | None = None

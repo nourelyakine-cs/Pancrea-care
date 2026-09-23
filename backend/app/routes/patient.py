@@ -3,8 +3,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.medecin import Medecin
-from app.schemas.full_patient import FullPatientCreate, FullPatientRead
-from app.schemas.patient import PatientCreate, PatientRead, PatientUpdate
+from app.schemas.evaluation import EvaluationResumeRead
+from app.schemas.full_patient import FullEvaluationCreate, FullPatientCreate, FullPatientRead
+from app.schemas.patient import (
+    PatientCreate,
+    PatientListItemRead,
+    PatientRead,
+    PatientUpdate,
+)
+from app.services import evaluation as evaluation_service
 from app.services import full_patient as full_patient_service
 from app.services import patient as patient_service
 from app.supabase import get_medecin_for_user
@@ -32,7 +39,7 @@ def create_patient(
     return patient_service.create_patient(db, payload, medecin.id_medecin)
 
 
-@router.get("/", response_model=list[PatientRead])
+@router.get("/", response_model=list[PatientListItemRead])
 def list_patients(
     nom: str | None = None,
     sexe: str | None = None,
@@ -42,6 +49,30 @@ def list_patients(
     db: Session = Depends(get_db),
 ):
     return patient_service.list_patients(db, nom, sexe, skip, limit)
+
+
+@router.get("/{id_patient}/evaluations", response_model=list[EvaluationResumeRead])
+def list_patient_evaluations(
+    id_patient: int,
+    medecin: Medecin = Depends(get_medecin_for_user),
+    db: Session = Depends(get_db),
+):
+    """Retourne l'historique complet des évaluations d'un patient."""
+    return evaluation_service.list_patient_evaluations(db, id_patient)
+
+
+@router.post("/{id_patient}/evaluations", response_model=FullPatientRead, status_code=201)
+def create_patient_evaluation(
+    id_patient: int,
+    payload: FullEvaluationCreate,
+    medecin: Medecin = Depends(get_medecin_for_user),
+    db: Session = Depends(get_db),
+):
+    """Crée une nouvelle évaluation complète (toutes les données) pour un
+    patient existant, dans son dossier déjà ouvert."""
+    return full_patient_service.create_evaluation_for_patient(
+        db, id_patient, payload, medecin.id_medecin
+    )
 
 
 @router.get("/{id_patient}", response_model=PatientRead)

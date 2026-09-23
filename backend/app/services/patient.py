@@ -2,6 +2,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.models.donnees_derivees import DonneesDerivees
+from app.models.dossier import DossierPatient
+from app.models.evaluation import EvaluationClinique
 from app.models.patient import Patient
 from app.schemas.patient import PatientCreate, PatientUpdate
 from app.services.audit import log_action
@@ -40,7 +43,87 @@ def list_patients(
         query = query.filter(Patient.nom.ilike(f"%{nom}%"))
     if sexe:
         query = query.filter(Patient.sexe == sexe)
-    return query.offset(skip).limit(limit).all()
+    patients = query.offset(skip).limit(limit).all()
+    _attach_dernier_bilan(db, patients)
+    return patients
+
+
+def _attach_dernier_bilan(db: Session, patients: list[Patient]) -> None:
+    """Attache à chaque patient son dossier, sa dernière évaluation et le
+    dernier bilan calculé (stade global + catégories TNM)."""
+    patient_ids = [p.id_patient for p in patients]
+    if not patient_ids:
+        return
+
+    dossiers = (
+        db.query(DossierPatient)
+        .filter(DossierPatient.id_patient.in_(patient_ids))
+        .order_by(DossierPatient.id_dossier.asc())
+        .all()
+    )
+    if not dossiers:
+        return
+
+    evaluations = (
+        db.query(EvaluationClinique)
+        .filter(
+            EvaluationClinique.id_dossier.in_(
+                [d.id_dossier for d in dossiers]
+            )
+        )
+        .order_by(
+            EvaluationClinique.date_evaluation.desc(),
+            EvaluationClinique.id_evaluation.desc(),
+        )
+        .all()
+    )
+
+    derniere_eval: dict[int, EvaluationClinique] = {}
+    for evaluation in evaluations:
+        derniere_eval.setdefault(evaluation.id_dossier, evaluation)
+
+    derniers_derivees: dict[int, DonneesDerivees] = {}
+    if evaluations:
+        derivees = (
+            db.query(DonneesDerivees)
+            .filter(
+                DonneesDerivees.id_evaluation.in_(
+                    [e.id_evaluation for e in evaluations]
+                )
+            )
+            .all()
+        )
+        for derivee in derivees:
+            courant = derniers_derivees.get(derivee.id_evaluation)
+            if courant is None or derivee.date_calcul > courant.date_calcul:
+                derniers_derivees[derivee.id_evaluation] = derivee
+
+    dossier_par_patient: dict[int, DossierPatient] = {}
+    for dossier in dossiers:
+        dossier_par_patient.setdefault(dossier.id_patient, dossier)
+
+    for patient in patients:
+        dossier = dossier_par_patient.get(patient.id_patient)
+        if dossier is None:
+            continue
+        evaluation = derniere_eval.get(dossier.id_dossier)
+        derivee = (
+            derniers_derivees.get(evaluation.id_evaluation)
+            if evaluation
+            else None
+        )
+        patient.id_dossier = dossier.id_dossier
+        patient.id_evaluation = (
+            evaluation.id_evaluation if evaluation else None
+        )
+        patient.date_derniere_evaluation = (
+            evaluation.date_evaluation if evaluation else None
+        )
+        patient.stade_global = derivee.stade_global if derivee else None
+        patient.resecabilite = derivee.resecabilite if derivee else None
+        patient.categorie_t = derivee.categorie_t if derivee else None
+        patient.categorie_n = derivee.categorie_n if derivee else None
+        patient.categorie_m = derivee.categorie_m if derivee else None
 
 
 def get_patient(db: Session, id_patient: int) -> Patient:

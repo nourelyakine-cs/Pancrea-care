@@ -12,24 +12,39 @@ import { getRecommendations, type RecommendationsResponse } from "@/lib/api";
 
 interface EvaluationPageProps {
   params?: Promise<{ id?: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
   patientId?: string;
   idEvaluation?: number | null;
   recommendationsData?: RecommendationsResponse | null;
   data?: any;
 }
 
-export default function EvaluationPage({ 
-  params, 
-  patientId: propPatientId, 
-  idEvaluation, 
+function scalar(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+export default function EvaluationPage({
+  params,
+  searchParams,
+  patientId: propPatientId,
+  idEvaluation,
   recommendationsData: initialData,
-  data 
+  data
 }: EvaluationPageProps) {
   const resolvedParams = params ? use(params) : null;
-  const currentPatientId = propPatientId || resolvedParams?.id || "PAT-CURRENT";
+  const resolvedSearch = searchParams ? use(searchParams) : null;
+
+  const queryEvalId = scalar(resolvedSearch?.evalId);
+  const effectiveEvalId = idEvaluation ?? (queryEvalId ? Number(queryEvalId) || null : null) ?? null;
+  const currentPatientId =
+    propPatientId ||
+    resolvedParams?.id ||
+    scalar(resolvedSearch?.patientId) ||
+    "PAT-CURRENT";
 
   const [evaluationData, setEvaluationData] = useState<RecommendationsResponse | null>(initialData || null);
-  const [loading, setLoading] = useState<boolean>(!initialData && Boolean(idEvaluation));
+  const [loading, setLoading] = useState<boolean>(!initialData && Boolean(effectiveEvalId));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,14 +52,14 @@ export default function EvaluationPage({
       setEvaluationData(initialData);
       return;
     }
-    if (idEvaluation) {
+    if (effectiveEvalId) {
       setLoading(true);
-      getRecommendations(idEvaluation)
+      getRecommendations(effectiveEvalId)
         .then((res) => setEvaluationData(res))
         .catch((err) => setError(err.message || "Impossible de charger les recommandations"))
         .finally(() => setLoading(false));
     }
-  }, [idEvaluation, initialData]);
+  }, [effectiveEvalId, initialData]);
 
   if (loading) {
     return (
@@ -79,7 +94,7 @@ export default function EvaluationPage({
     necessite_rcp = false,
     source_code = "TNCD",
     source_version = "2024",
-    id_evaluation = idEvaluation
+    id_evaluation = effectiveEvalId
   } = evaluationData;
 
   const totalRegles = decision_path.length;

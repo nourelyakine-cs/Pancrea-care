@@ -5,16 +5,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import logoImg from "@/assets/logo.png";
+import { forgotPassword } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      // Ici vous ajouterez l'appel API (ex: Supabase, Firebase ou votre backend)
+    setIsLoading(true);
+    setError("");
+    try {
+      await forgotPassword(email);
       setIsSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,11 +81,18 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
 
+                {error && (
+                    <p className="text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {error}
+                    </p>
+                  )}
+
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#1D7893] hover:bg-[#209BBF] text-white font-semibold rounded-xl shadow-md transition-all duration-200 text-sm mt-2"
+                  disabled={isLoading}
+                  className="w-full py-3.5 bg-[#1D7893] hover:bg-[#209BBF] text-white font-semibold rounded-xl shadow-md transition-all duration-200 text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Envoyer le lien de réinitialisation
+                  {isLoading ? "Envoi en cours..." : "Envoyer le lien de réinitialisation"}
                 </button>
               </form>
             </motion.div>

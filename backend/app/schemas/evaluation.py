@@ -1,49 +1,73 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.models.enums import (
+    ClasseEscat,
+    ContexteEvaluation,
+    ContactArtHepatique,
+    ContactVaisseau,
+    ContactVmsVp,
+    Diabete,
+    EtatNutritionnel,
+    Fusion,
+    LocalisationTumorale,
+    Severite,
+    SiteMetastase,
+    StatutBrca,
+    StatutDpd,
+    StatutKras,
+    StatutLewis,
+    StatutMsi,
+    TypeImagerie,
+    TypeTest,
+)
 
 
 # --- Évaluation clinique ----------------------------------------------------
 
 
 class EvaluationCreate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     date_evaluation: date
-    contexte: Literal["diagnostic", "pre_neoadjuvant", "restaging", "pre_chirurgie", "adjuvant", "surveillance", "recidive"] = "diagnostic"
-    ecog: int | None = None
-    etat_nutritionnel: Literal["normal", "denutrition_moderee", "denutrition_severe", "inconnu"] = "inconnu"
+    contexte: ContexteEvaluation = "diagnostic"
+    ecog: int | None = Field(default=None, ge=0, le=5)
+    etat_nutritionnel: EtatNutritionnel = "inconnu"
     douleur_presente: bool | None = None
-    intensite_douleur: int | None = None
+    intensite_douleur: int | None = Field(default=None, ge=0, le=10)
     ictere: bool | None = None
-    diabete: Literal["absent", "recent_moins_2ans", "ancien", "inconnu"] = "inconnu"
+    diabete: Diabete = "inconnu"
 
 
 class EvaluationUpdate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     date_evaluation: date | None = None
-    contexte: Literal["diagnostic", "pre_neoadjuvant", "restaging", "pre_chirurgie", "adjuvant", "surveillance", "recidive"] | None = None
-    ecog: int | None = None
-    etat_nutritionnel: Literal["normal", "denutrition_moderee", "denutrition_severe", "inconnu"] | None = None
+    contexte: ContexteEvaluation | None = None
+    ecog: int | None = Field(default=None, ge=0, le=5)
+    etat_nutritionnel: EtatNutritionnel | None = None
     douleur_presente: bool | None = None
-    intensite_douleur: int | None = None
+    intensite_douleur: int | None = Field(default=None, ge=0, le=10)
     ictere: bool | None = None
-    diabete: Literal["absent", "recent_moins_2ans", "ancien", "inconnu"] | None = None
+    diabete: Diabete | None = None
 
 
 class EvaluationRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_evaluation: int
     id_dossier: int
     id_medecin_evaluateur: int | None = None
     date_evaluation: date
-    contexte: str | None = None
+    contexte: ContexteEvaluation | None = None
     ecog: int | None = None
-    etat_nutritionnel: str | None = None
+    etat_nutritionnel: EtatNutritionnel | None = None
     douleur_presente: bool | None = None
     intensite_douleur: int | None = None
     ictere: bool | None = None
-    diabete: str | None = None
+    diabete: Diabete | None = None
     date_creation: datetime
 
 
@@ -51,31 +75,35 @@ class EvaluationRead(BaseModel):
 
 
 class BiologieCreate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     ca19_9: Decimal | None = None
     ca19_9_multiple_lsn: Decimal | None = None
     cholestase: bool | None = None
     bilirubine: Decimal | None = None
     bilirubine_ratio_lsn: Decimal | None = None
-    statut_lewis: Literal["exprime", "a_b_negatif", "inconnu"] = "inconnu"
-    statut_dpd: Literal["normal", "deficit_partiel", "deficit_complet", "non_teste"] = "non_teste"
+    statut_lewis: StatutLewis = "inconnu"
+    statut_dpd: StatutDpd = "non_teste"
     albuminemie: Decimal | None = None
     date_analyse: date | None = None
 
 
 class BiologieUpdate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     ca19_9: Decimal | None = None
     ca19_9_multiple_lsn: Decimal | None = None
     cholestase: bool | None = None
     bilirubine: Decimal | None = None
     bilirubine_ratio_lsn: Decimal | None = None
-    statut_lewis: Literal["exprime", "a_b_negatif", "inconnu"] | None = None
-    statut_dpd: Literal["normal", "deficit_partiel", "deficit_complet", "non_teste"] | None = None
+    statut_lewis: StatutLewis | None = None
+    statut_dpd: StatutDpd | None = None
     albuminemie: Decimal | None = None
     date_analyse: date | None = None
 
 
 class BiologieRead(BiologieCreate):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_biologie: int
     id_evaluation: int
@@ -85,35 +113,39 @@ class BiologieRead(BiologieCreate):
 
 
 class ImagerieCreate(BaseModel):
-    type_imagerie: Literal["TDM", "IRM"]
+    model_config = ConfigDict(use_enum_values=True)
+
+    type_imagerie: TypeImagerie
     date_imagerie: date
-    localisation_tumorale: Literal["tete_crochet", "corps_queue", "inconnu"] = "inconnu"
+    localisation_tumorale: LocalisationTumorale = "inconnu"
     taille_tumorale_cm: Decimal | None = None
-    contact_ams: Literal["absent", "lt180", "ge180"] | None = None
-    contact_tronc_coeliaque: Literal["absent", "lt180", "ge180"] | None = None
-    contact_art_hepatique: Literal["absent", "court_sans_envahissement", "envahissant"] | None = None
-    contact_vms_vp: Literal["absent", "lt180_sans_irregularite", "ge180_ou_irregularite", "occlusion_reconstructible", "occlusion_non_reconstructible"] | None = None
+    contact_ams: ContactVaisseau | None = None
+    contact_tronc_coeliaque: ContactVaisseau | None = None
+    contact_art_hepatique: ContactArtHepatique | None = None
+    contact_vms_vp: ContactVmsVp | None = None
     extension_ganglionnaire_regionale: bool = False
     extension_ganglionnaire_distance: bool | None = None
     metastases_presentes: bool | None = None
 
 
 class ImagerieUpdate(BaseModel):
-    type_imagerie: str | None = None
+    model_config = ConfigDict(use_enum_values=True)
+
+    type_imagerie: TypeImagerie | None = None
     date_imagerie: date | None = None
-    localisation_tumorale: str | None = None
+    localisation_tumorale: LocalisationTumorale | None = None
     taille_tumorale_cm: Decimal | None = None
-    contact_ams: str | None = None
-    contact_tronc_coeliaque: str | None = None
-    contact_art_hepatique: str | None = None
-    contact_vms_vp: str | None = None
+    contact_ams: ContactVaisseau | None = None
+    contact_tronc_coeliaque: ContactVaisseau | None = None
+    contact_art_hepatique: ContactArtHepatique | None = None
+    contact_vms_vp: ContactVmsVp | None = None
     extension_ganglionnaire_regionale: bool | None = None
     extension_ganglionnaire_distance: bool | None = None
     metastases_presentes: bool | None = None
 
 
 class ImagerieRead(ImagerieCreate):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_imagerie: int
     id_evaluation: int
@@ -123,21 +155,25 @@ class ImagerieRead(ImagerieCreate):
 
 
 class MetastaseCreate(BaseModel):
-    site: str
+    model_config = ConfigDict(use_enum_values=True)
+
+    site: SiteMetastase
     detail: str | None = None
 
 
 class MetastaseUpdate(BaseModel):
-    site: str | None = None
+    model_config = ConfigDict(use_enum_values=True)
+
+    site: SiteMetastase | None = None
     detail: str | None = None
 
 
 class MetastaseRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_metastase: int
     id_imagerie: int
-    site: str | None = None
+    site: SiteMetastase | None = None
     detail: str | None = None
 
 
@@ -145,45 +181,29 @@ class MetastaseRead(BaseModel):
 
 
 class HistologieCreate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     preuve_histologique: bool = False
-    statut_brca_germinal: Literal["mute", "non_mute", "non_teste"] = "non_teste"
-    statut_kras: Literal["sauvage", "g12c", "g12d", "g12v", "autre_mute", "non_teste"] = "non_teste"
-    statut_msi_dmmr: Literal["mss", "msi_h", "dmmr", "non_teste"] = "non_teste"
-    fusion_ntrk: Literal["positif", "negatif", "non_teste"] = "non_teste"
-    fusion_nrg1: Literal["positif", "negatif", "non_teste"] = "non_teste"
-
-    @field_validator("statut_brca_germinal", mode="before")
-    @classmethod
-    def normalize_brca(cls, value: object) -> object:
-        return {"muté": "mute", "non muté": "non_mute", "non testé": "non_teste"}.get(value, value)
-
-    @field_validator("statut_kras", mode="before")
-    @classmethod
-    def normalize_kras(cls, value: object) -> object:
-        return {"G12C": "g12c", "G12D": "g12d", "G12V": "g12v", "autre": "autre_mute", "non testé": "non_teste"}.get(value, value)
-
-    @field_validator("statut_msi_dmmr", mode="before")
-    @classmethod
-    def normalize_msi(cls, value: object) -> object:
-        return {"positif": "msi_h", "négatif": "mss", "non testé": "non_teste"}.get(value, value)
-
-    @field_validator("fusion_ntrk", "fusion_nrg1", mode="before")
-    @classmethod
-    def normalize_fusion(cls, value: object) -> object:
-        return {"oui": "positif", "non": "negatif", "non testé": "non_teste"}.get(value, value)
+    statut_brca_germinal: StatutBrca = "non_teste"
+    statut_kras: StatutKras = "non_teste"
+    statut_msi_dmmr: StatutMsi = "non_teste"
+    fusion_ntrk: Fusion = "non_teste"
+    fusion_nrg1: Fusion = "non_teste"
 
 
 class HistologieUpdate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     preuve_histologique: bool | None = None
-    statut_brca_germinal: str | None = None
-    statut_kras: str | None = None
-    statut_msi_dmmr: str | None = None
-    fusion_ntrk: str | None = None
-    fusion_nrg1: str | None = None
+    statut_brca_germinal: StatutBrca | None = None
+    statut_kras: StatutKras | None = None
+    statut_msi_dmmr: StatutMsi | None = None
+    fusion_ntrk: Fusion | None = None
+    fusion_nrg1: Fusion | None = None
 
 
 class HistologieRead(HistologieCreate):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_histo: int
     id_evaluation: int
@@ -193,25 +213,29 @@ class HistologieRead(HistologieCreate):
 
 
 class AnalyseCreate(BaseModel):
-    type_test: str | None = None
+    model_config = ConfigDict(use_enum_values=True)
+
+    type_test: TypeTest | None = None
     gene: str | None = None
     alteration: str | None = None
-    classe_escat: str | None = None
+    classe_escat: ClasseEscat | None = None
     date_test: date | None = None
     reference_rapport: str | None = None
 
 
 class AnalyseUpdate(BaseModel):
-    type_test: str | None = None
+    model_config = ConfigDict(use_enum_values=True)
+
+    type_test: TypeTest | None = None
     gene: str | None = None
     alteration: str | None = None
-    classe_escat: str | None = None
+    classe_escat: ClasseEscat | None = None
     date_test: date | None = None
     reference_rapport: str | None = None
 
 
 class AnalyseRead(AnalyseCreate):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_analyse: int
     id_evaluation: int
@@ -221,20 +245,53 @@ class AnalyseRead(AnalyseCreate):
 
 
 class ComorbiditeEvaluationCreate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     id_comorbidite: int
-    severite: str = "mineure"
+    severite: Severite = "mineure"
     note: str | None = None
 
 
 class ComorbiditeEvaluationUpdate(BaseModel):
-    severite: str | None = None
+    model_config = ConfigDict(use_enum_values=True)
+
+    severite: Severite | None = None
     note: str | None = None
 
 
 class ComorbiditeEvaluationRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id_evaluation: int
     id_comorbidite: int
-    severite: str | None = None
+    severite: Severite | None = None
     note: str | None = None
+
+
+# --- Résumé des évaluations d'un patient (historique / "Toutes évaluations") ---
+
+
+class EvaluationResumeRead(BaseModel):
+    """Évaluation d'un patient enrichie du médecin évaluateur et du dernier
+    calcul de DonneesDerivees (stade TNM, résécabilité, critères ABC)."""
+
+    id_evaluation: int
+    id_dossier: int
+    date_evaluation: date
+    contexte: str | None = None
+    ecog: int | None = None
+    etat_nutritionnel: str | None = None
+    douleur_presente: bool | None = None
+    ictere: bool | None = None
+    date_creation: datetime
+
+    medecin_nom: str | None = None
+    medecin_prenom: str | None = None
+
+    stade_global: str | None = None
+    resecabilite: str | None = None
+    categorie_t: str | None = None
+    categorie_n: str | None = None
+    categorie_m: str | None = None
+    sous_categorie_abc: str | None = None
+    date_calcul: datetime | None = None

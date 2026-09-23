@@ -14,58 +14,19 @@ from app.models.evaluation import (
     MetastaseLocalisation,
 )
 from app.models.patient import Patient
-from app.schemas.full_patient import FullPatientCreate
+from app.schemas.full_patient import FullEvaluationCreate, FullPatientCreate
 from app.services.audit import log_action
 
 
-def create_full_patient(
+def _create_evaluation_and_decision(
     db: Session,
-    payload: FullPatientCreate,
-    medecin_id: int | None = None,
+    ev: FullEvaluationCreate,
+    id_dossier: int,
+    medecin_id: int | None,
 ) -> dict:
-    """Crée en une seule transaction : patient + dossier + première évaluation
-    (et toutes ses données) + une décision (recommandation à générer)."""
-    patient = Patient(
-        nom=payload.nom,
-        prenom=payload.prenom,
-        date_naissance=payload.date_naissance,
-        sexe=payload.sexe,
-        telephone=payload.telephone,
-        email=payload.email,
-        adresse=payload.adresse,
-    )
-    db.add(patient)
-    try:
-        db.flush()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Impossible de créer le patient (données invalides ou en conflit).",
-        )
-    log_action(
-        db, medecin_id, "patient_create", "patient", patient.id_patient,
-        {"nom": payload.nom, "prenom": payload.prenom, "email": payload.email},
-    )
-
-    dossier = DossierPatient(id_patient=patient.id_patient, id_medecin_referent=medecin_id)
-    db.add(dossier)
-    db.flush()
-    log_action(
-        db, medecin_id, "dossier_create", "dossier_patient", dossier.id_dossier,
-        {"id_patient": patient.id_patient},
-    )
-
-    for ant in payload.antecedents:
-        antecedent = AntecedentFamilial(id_dossier=dossier.id_dossier, **ant.model_dump())
-        db.add(antecedent)
-    for mut in payload.mutations:
-        mutation = MutationGerminale(id_dossier=dossier.id_dossier, **mut.model_dump())
-        db.add(mutation)
-
-    ev = payload.evaluation
+    """Crée une évaluation complète (et ses données liées) + la décision."""
     evaluation = EvaluationClinique(
-        id_dossier=dossier.id_dossier,
+        id_dossier=id_dossier,
         id_medecin_evaluateur=medecin_id,
         **ev.model_dump(
             exclude={"biologie", "imageries", "histologie", "analyses", "comorbidites"}
@@ -76,7 +37,7 @@ def create_full_patient(
     id_evaluation = evaluation.id_evaluation
     log_action(
         db, medecin_id, "evaluation_create", "evaluation_clinique", id_evaluation,
-        {"id_dossier": dossier.id_dossier},
+        {"id_dossier": id_dossier},
     )
 
     if ev.biologie is not None:
@@ -128,12 +89,101 @@ def create_full_patient(
         {"id_evaluation": id_evaluation},
     )
 
+    return {
+        "id_evaluation": id_evaluation,
+        "id_decision": decision.id_decision,
+        "date_creation": evaluation.date_creation,
+    }
+
+
+def create_full_patient(
+    db: Session,
+    payload: FullPatientCreate,
+    medecin_id: int | None = None,
+) -> dict:
+    """Crée en une seule transaction : patient + dossier + première évaluation
+    (et toutes ses données) + une décision (recommandation à générer)."""
+    patient = Patient(
+        nom=payload.nom,
+        prenom=payload.prenom,
+        date_naissance=payload.date_naissance,
+        sexe=payload.sexe,
+        telephone=payload.telephone,
+        email=payload.email,
+        adresse=payload.adresse,
+    )
+    db.add(patient)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Impossible de créer le patient (données invalides ou en conflit).",
+        )
+    log_action(
+        db, medecin_id, "patient_create", "patient", patient.id_patient,
+        {"nom": payload.nom, "prenom": payload.prenom, "email": payload.email},
+    )
+
+    dossier = DossierPatient(id_patient=patient.id_patient, id_medecin_referent=medecin_id)
+    db.add(dossier)
+    db.flush()
+    log_action(
+        db, medecin_id, "dossier_create", "dossier_patient", dossier.id_dossier,
+        {"id_patient": patient.id_patient},
+    )
+
+    for ant in payload.antecedents:
+        antecedent = AntecedentFamilial(id_dossier=dossier.id_dossier, **ant.model_dump())
+        db.add(antecedent)
+    for mut in payload.mutations:
+        mutation = MutationGerminale(id_dossier=dossier.id_dossier, **mut.model_dump())
+        db.add(mutation)
+
+    ev = payload.evaluation
+    result = _create_evaluation_and_decision(db, ev, dossier.id_dossier, medecin_id)
+
     db.commit()
 
     return {
         "id_patient": patient.id_patient,
         "id_dossier": dossier.id_dossier,
-        "id_evaluation": id_evaluation,
-        "id_decision": decision.id_decision,
-        "date_creation": evaluation.date_creation,
+        **result,
+    }
+
+
+def create_evaluation_for_patient(
+    db: Session,
+    id_patient: int,
+    payload: FullEvaluationCreate,
+    medecin_id: int | None = None,
+) -> dict:
+    """Crée une nouvelle évaluation complète pour un patient existant
+    (réutilise son dossier ouvert). Ne recrée ni le patient ni le dossier."""
+    patient = db.get(Patient, id_patient)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient {id_patient} introuvable.",
+        )
+
+    dossier = (
+        db.query(DossierPatient)
+        .filter(DossierPatient.id_patient == id_patient)
+        .order_by(DossierPatient.id_dossier.asc())
+        .first()
+    )
+    if dossier is None:
+        dossier = DossierPatient(id_patient=id_patient, id_medecin_referent=medecin_id)
+        db.add(dossier)
+        db.flush()
+
+    result = _create_evaluation_and_decision(db, payload, dossier.id_dossier, medecin_id)
+    db.commit()
+
+    return {
+        "id_patient": patient.id_patient,
+        "id_dossier": dossier.id_dossier,
+        **result,
     }
