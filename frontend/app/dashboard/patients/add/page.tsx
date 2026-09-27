@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // 1. Import pour la redirection Next.js
 import Step1Demographie from "./components/Step1Demographie";
 import Step2EtatClinique from "./components/Step2EtatClinique";
 import Step3Biologie from "./components/Step3Biologie";
@@ -10,7 +11,7 @@ import Step6Histologie from "./components/Step6Histologie";
 import Step7Parcours from "./components/Step7Parcours";
 import Step8Calcul from "./components/Step8Calcul";
 import EvaluationPage from "../../evaluation/page";
-import { CheckCircle2, ArrowLeft } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Loader2 } from "lucide-react"; // Import de Loader2 pour l'effet de chargement
 import { createPatientAndCalculate, type ClinicalResult } from "../../../../lib/api";
 
 const initialData = {
@@ -18,6 +19,7 @@ const initialData = {
 };
 
 export default function AddPatientPage() {
+  const router = useRouter(); // 2. Initialisation du router Next.js
   const [currentStep, setCurrentStep] = useState(1);
   const [maxReachedStep, setMaxReachedStep] = useState(1);
   const [patientData, setPatientData] = useState(initialData);
@@ -25,6 +27,9 @@ export default function AddPatientPage() {
   const [createdIds, setCreatedIds] = useState<{ id_patient: number; id_evaluation: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Nouvel état pour gérer la carte / modal de succès
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const validity = [
     true,
@@ -67,15 +72,23 @@ export default function AddPatientPage() {
     setMaxReachedStep((old) => Math.max(old, nextStep));
   };
 
+  // 3. Gestion du clic sur "Enregistrer définitivement"
   const handleFinal = () => { 
     if (!createdIds) return; 
-    alert(`Patient enregistré avec succès ! ID patient : ${createdIds.id_patient}`); 
+
+    // Affiche le popup / carte de succès
+    setShowSuccessModal(true);
+
+    // Redirige vers le dashboard docteur (liste des patients) après 2 secondes
+    setTimeout(() => {
+      router.push("/dashboard/patients"); // Ajustez la route selon votre projet si besoin (ex: "/dashboard")
+    }, 2000);
   };
 
   const steps = ["Démographie", "Clinique", "Biologie", "Imagerie", "TNM", "Histologie", "Parcours", "Calculs CDSS", "Évaluation"];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 font-serif">
+    <div className="max-w-5xl mx-auto space-y-6 font-serif relative">
       {/* STEPS HEADER */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between text-xs overflow-x-auto">
         {steps.map((label, index) => { 
@@ -135,6 +148,32 @@ export default function AddPatientPage() {
             >
               <CheckCircle2 className="w-5 h-5" /> Enregistrer définitivement
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. CARTE / MODAL DESIGNÉE POUR LE SUCCÈS D'ENREGISTREMENT */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200 font-sans">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl border border-emerald-100 max-w-md w-full text-center space-y-4 mx-4 animate-in zoom-in-95 duration-200">
+            {/* Icône de validation */}
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+            
+            {/* Titre et message */}
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Enregistrement réussi !</h3>
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                Le dossier du patient <span className="font-semibold text-gray-700">PAT-{createdIds?.id_patient}</span> ainsi que son rapport d'évaluation ont été enregistrés avec succès.
+              </p>
+            </div>
+
+            {/* Indicateur de redirection vers le dashboard */}
+            <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-xs text-gray-600 flex items-center justify-center gap-2 mt-4">
+              <Loader2 className="w-4 h-4 animate-spin text-[#1D7893]" />
+              <span>Redirection vers la liste des patients...</span>
+            </div>
           </div>
         </div>
       )}
