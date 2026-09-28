@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import logoImg from "@/assets/logo.png";
 import { resetPassword } from "@/lib/api";
+import PasswordRequirements from "@/components/PasswordRequirements";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -27,6 +28,10 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+    if (password.length === 0) {
+      setError("Veuillez saisir un nouveau mot de passe.");
       return;
     }
     if (!tokens.access_token || !tokens.refresh_token) {
@@ -76,6 +81,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-sm bg-gray-50/50"
                 />
+                <PasswordRequirements password={password} className="mt-2" />
               </div>
 
               <div>

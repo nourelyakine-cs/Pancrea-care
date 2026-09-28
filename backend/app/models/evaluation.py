@@ -277,12 +277,27 @@ class Imagerie(Base):
     evaluation = relationship("EvaluationClinique")
 
 
+class SiteMetastase(str, enum.Enum):
+    hepatique = "hepatique"
+    peritoneale = "peritoneale"
+    pulmonaire = "pulmonaire"
+    osseuse = "osseuse"
+    autre = "autre"
+
+
 class MetastaseLocalisation(Base):
     __tablename__ = "metastase_localisation"
 
     id_metastase = Column(Integer, primary_key=True, index=True)
     id_imagerie = Column(Integer, ForeignKey("imagerie.id_imagerie", ondelete="CASCADE"), nullable=False)
-    site = Column(String(20), nullable=False)
+    site = Column(
+        Enum(
+            SiteMetastase,
+            name="t_site_metastase",
+            create_type=False
+        ),
+        nullable=False
+    )
     detail = Column(Text)
 
     imagerie = relationship("Imagerie")

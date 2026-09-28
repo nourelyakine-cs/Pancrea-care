@@ -6,7 +6,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { login, signup } from "@/lib/api";
+import {
+  DEFAULT_PASSWORD_POLICY,
+  getPasswordPolicy,
+  login,
+  signup,
+  type PasswordPolicy,
+} from "@/lib/api";
+import PasswordRequirements, { isPasswordCompliant } from "@/components/PasswordRequirements";
 
 import authImg from "@/assets/about-doctors.png"; 
 import logoImg from "@/assets/logo.png"; 
@@ -25,9 +32,28 @@ function AuthPageContent() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [policy, setPolicy] = useState<PasswordPolicy | null>(null);
+
+  // Les exigences affichées viennent de l'API : c'est exactement ce que le
+  // serveur refusera, pas une copie qui pourrait dériver.
+  useEffect(() => {
+    let active = true;
+    getPasswordPolicy().then((p) => {
+      if (active) setPolicy(p);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const passwordCompliant = isPasswordCompliant(password, policy ?? DEFAULT_PASSWORD_POLICY);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSignUp && !passwordCompliant) {
+      setError("Le mot de passe ne respecte pas les exigences ci-dessus.");
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -213,6 +239,13 @@ function AuthPageContent() {
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-xs transition-all bg-gray-50/50"
                     />
+                    <PasswordRequirements password={password} policy={policy} className="mt-2" />
+                    {!isSignUp && (
+                      <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">
+                        Ces exigences s&apos;appliquent à la création et à la réinitialisation d&apos;un mot de
+                        passe ; votre connexion reste acceptée quelle que soit sa robustesse actuelle.
+                      </p>
+                    )}
                   </div>
 
                   {!isSignUp && (
@@ -231,7 +264,7 @@ function AuthPageContent() {
 
                   <button 
                     type="submit" 
-                    disabled={isLoading}
+                    disabled={isLoading || (isSignUp && password.length > 0 && !passwordCompliant)}
                     className="w-full py-2.5 bg-[#1D7893] hover:bg-[#209BBF] text-white font-semibold rounded-xl shadow-md transition-all duration-300 mt-2 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Veuillez patienter..." : (isSignUp ? "Créer mon compte" : "Se connecter")}

@@ -11,6 +11,7 @@ from app.schemas.patient import (
     PatientRead,
     PatientUpdate,
 )
+from app.schemas.patient_detail import PatientDetailRead
 from app.services import evaluation as evaluation_service
 from app.services import full_patient as full_patient_service
 from app.services import patient as patient_service
@@ -73,6 +74,18 @@ def create_patient_evaluation(
     return full_patient_service.create_evaluation_for_patient(
         db, id_patient, payload, medecin.id_medecin
     )
+
+
+@router.get("/{id_patient}/detail", response_model=PatientDetailRead)
+def get_patient_detail(
+    id_patient: int,
+    medecin: Medecin = Depends(get_medecin_for_user),
+    db: Session = Depends(get_db),
+):
+    """Fiche complète d'un patient pour l'écran « Voir Détails » : identité,
+    dernière évaluation (clinique, biologie, imagerie, histologie, parcours
+    thérapeutique) et dernier bilan CDSS, en un seul payload."""
+    return patient_service.get_patient_detail(db, id_patient)
 
 
 @router.get("/{id_patient}", response_model=PatientRead)
