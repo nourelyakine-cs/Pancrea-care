@@ -15,14 +15,6 @@ export default function ResetPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [tokens] = useState(() => {
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    return {
-      access_token: params.get("access_token") ?? "",
-      refresh_token: params.get("refresh_token") ?? "",
-    };
-  });
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,14 +26,17 @@ export default function ResetPasswordPage() {
       setError("Veuillez saisir un nouveau mot de passe.");
       return;
     }
-    if (!tokens.access_token || !tokens.refresh_token) {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const access_token = params.get("access_token") ?? "";
+    const refresh_token = params.get("refresh_token") ?? "";
+    if (!access_token || !refresh_token) {
       setError("Lien de réinitialisation invalide ou expiré. Relancez la procédure.");
       return;
     }
     setIsLoading(true);
     setError("");
     try {
-      await resetPassword(tokens.access_token, tokens.refresh_token, password);
+      await resetPassword(access_token, refresh_token, password);
       setIsSuccess(true);
       setTimeout(() => {
         router.push("/login");
