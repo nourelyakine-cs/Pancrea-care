@@ -295,6 +295,35 @@ function buildEvaluationPayload(data: Record<string, any>) {
   const bilirubine_ratio_lsn = bilirubine != null && lsnBilirubine && lsnBilirubine > 0 ? bilirubine / lsnBilirubine : null;
 
   const metastases_presentes = Boolean(data.metastases);
+  const duree = toNumber(data.dureeChimiotherapieMois);
+  const dateDebutCourante = duree != null
+    ? new Date(Date.now() - duree * 30.4375 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    : null;
+  const reponse = data.reponseTraitementEnCours === "réponse"
+    ? "reponse"
+    : data.reponseTraitementEnCours || null;
+  const currentLine = Number(data.ligneTraitementActuelle || 1);
+  const received = Array.isArray(data.traitementsRecus) ? data.traitementsRecus.filter(Boolean) : [];
+  const previousTreatments = received.map((name: string, index: number) => ({
+    numero_ligne: Math.max(1, currentLine - received.length + index),
+    date_debut: null,
+    date_fin: null,
+    reponse: null,
+    toxicite_residuelle: false,
+    type_toxicite: null,
+    termine_comme_prevu: null,
+    notes: name,
+  }));
+  const traitements = [...previousTreatments, {
+    numero_ligne: currentLine,
+    date_debut: dateDebutCourante,
+    date_fin: null,
+    reponse,
+    toxicite_residuelle: Boolean(data.toxiciteResiduelle),
+    type_toxicite: data.detailsToxicite || null,
+    termine_comme_prevu: null,
+    notes: null,
+  }];
 
   return {
     date_evaluation: today,
@@ -326,7 +355,11 @@ function buildEvaluationPayload(data: Record<string, any>) {
         extension_ganglionnaire_regionale: Boolean(data.adenopathieRegionale),
         extension_ganglionnaire_distance: Boolean(data.adenopathieDistance),
         metastases_presentes,
-        metastases: metastases_presentes ? [{ site: "autre" }] : [],
+        metastases: metastases_presentes
+          ? (data.sitesMetastases?.length
+            ? data.sitesMetastases.map((site: string) => ({ site, detail: null }))
+            : [{ site: "autre", detail: null }])
+          : [],
       },
     ],
     histologie: {
@@ -339,6 +372,18 @@ function buildEvaluationPayload(data: Record<string, any>) {
     },
     analyses: [],
     comorbidites: [],
+    parcours: {
+      angiocholite: data.angiocholite ?? null,
+      comorbidites_lourdes: data.comorbiditesLourdes ?? null,
+      tumeur_controlee: data.tumeurControle ?? null,
+      nouvelles_metastases: data.nouvellesMetastases ?? null,
+      chirurgie_d_emblee: data.chirurgieDembleePrevue ?? null,
+      traitement_medical_prevu: data.traitementMedicalPrevu ?? null,
+      pas_de_progression_apres_16_semaines_platine: data.pasDeProgressionApres16SemainesPlatine ?? null,
+      date_reevaluation: today,
+      commentaire: null,
+    },
+    traitements,
   };
 }
 

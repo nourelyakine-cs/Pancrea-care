@@ -13,6 +13,8 @@ from app.models.evaluation import (
     Imagerie,
     MetastaseLocalisation,
 )
+from app.models.parcours_therapeutique import EvaluationParcoursTherapeutique
+from app.models.traitement import Traitement
 from app.models.patient import Patient
 from app.schemas.full_patient import FullEvaluationCreate, FullPatientCreate
 from app.services.audit import log_action
@@ -29,7 +31,7 @@ def _create_evaluation_and_decision(
         id_dossier=id_dossier,
         id_medecin_evaluateur=medecin_id,
         **ev.model_dump(
-            exclude={"biologie", "imageries", "histologie", "analyses", "comorbidites"}
+            exclude={"biologie", "imageries", "histologie", "analyses", "comorbidites", "parcours", "traitements"}
         ),
     )
     db.add(evaluation)
@@ -66,6 +68,17 @@ def _create_evaluation_and_decision(
                 note=comorb.note,
             )
         )
+
+    if ev.parcours is not None:
+        db.add(EvaluationParcoursTherapeutique(
+            id_evaluation=id_evaluation,
+            **ev.parcours.model_dump(),
+        ))
+    for treatment in ev.traitements:
+        db.add(Traitement(
+            id_dossier=id_dossier,
+            **treatment.model_dump(),
+        ))
 
     decision = Decision(
         id_evaluation=id_evaluation,

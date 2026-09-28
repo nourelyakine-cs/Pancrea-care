@@ -251,6 +251,28 @@ export default function EvaluationPage({
             <span className="font-bold text-amber-800 text-sm">{reglesIgnoreesCount}</span>
           </div>
         </div>
+
+        {reglesIgnoreesCount > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 space-y-2">
+            <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
+              <AlertTriangle className="w-4 h-4" />
+              Données nécessaires pour évaluer les règles ignorées
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {decision_path
+                .filter((rule) => rule.statut === "ignoree")
+                .map((rule) => (
+                  <div key={rule.code} className="rounded-lg border border-amber-100 bg-white px-3 py-2 text-xs">
+                    <span className="font-bold text-amber-800">{rule.code}</span>
+                    <span className="text-gray-600"> — champ(s) manquant(s) : </span>
+                    <span className="font-medium text-gray-800">
+                      {rule.champs_manquants?.join(", ") || "non précisé"}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

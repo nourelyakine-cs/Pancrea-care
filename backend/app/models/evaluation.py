@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 import enum
 
 from app.database import Base
+from app.models.enums import SiteMetastase
 
 
 class EtatNutritionnel(str, enum.Enum):
@@ -282,7 +283,17 @@ class MetastaseLocalisation(Base):
 
     id_metastase = Column(Integer, primary_key=True, index=True)
     id_imagerie = Column(Integer, ForeignKey("imagerie.id_imagerie", ondelete="CASCADE"), nullable=False)
-    site = Column(String(20), nullable=False)
+    site = Column(
+        Enum(
+            SiteMetastase,
+            name="t_site_metastase",
+            schema="public",
+            native_enum=True,
+            create_type=False,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
     detail = Column(Text)
 
     imagerie = relationship("Imagerie")

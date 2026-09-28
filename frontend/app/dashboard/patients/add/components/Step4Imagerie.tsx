@@ -23,6 +23,15 @@ export default function Step4Imagerie({ data, updateData, onNext, onPrev }: Step
     updateData({ [name]: updatedValue });
   };
 
+  const toggleMetastasisSite = (site: string) => {
+    const selectedSites: string[] = Array.isArray(data.sitesMetastases) ? data.sitesMetastases : [];
+    updateData({
+      sitesMetastases: selectedSites.includes(site)
+        ? selectedSites.filter((selected) => selected !== site)
+        : [...selectedSites, site],
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onNext();
@@ -170,6 +179,31 @@ export default function Step4Imagerie({ data, updateData, onNext, onPrev }: Step
               />
               <span className="font-semibold text-red-600">Métastases à distance</span>
             </label>
+            {data.metastases && (
+              <label className="sm:col-span-3 block">
+                <span className="block mb-1 font-semibold text-red-700">Sites métastatiques *</span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 rounded-xl border border-red-200 bg-white p-3">
+                  {[
+                    ["hepatique", "Hépatique"],
+                    ["peritoneale", "Péritonéale"],
+                    ["pulmonaire", "Pulmonaire"],
+                    ["osseuse", "Osseuse"],
+                    ["autre", "Autre"],
+                  ].map(([value, label]) => (
+                    <label key={value} className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1 hover:bg-red-50">
+                      <input
+                        type="checkbox"
+                        checked={Array.isArray(data.sitesMetastases) && data.sitesMetastases.includes(value)}
+                        onChange={() => toggleMetastasisSite(value)}
+                        className="w-4 h-4 rounded text-[#1D7893]"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <span className="text-[10px] text-gray-500">Cliquez simplement sur un ou plusieurs sites.</span>
+              </label>
+            )}
 
           </div>
         </div>

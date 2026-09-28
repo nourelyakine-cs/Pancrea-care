@@ -11,6 +11,7 @@ class EvaluationParcoursTherapeutique(Base):
     id_parcours = Column(BigInteger, primary_key=True)
     id_evaluation = Column(Integer, ForeignKey("evaluation_clinique.id_evaluation", ondelete="CASCADE"), nullable=False, index=True)
     angiocholite = Column(Boolean)
+    comorbidites_lourdes = Column(Boolean)
     tumeur_controlee = Column(Boolean)
     nouvelles_metastases = Column(Boolean)
     chirurgie_d_emblee = Column(Boolean)

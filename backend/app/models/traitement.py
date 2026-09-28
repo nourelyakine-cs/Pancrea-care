@@ -7,10 +7,12 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
+    Enum,
 )
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.models.enums import Reponse
 
 
 class Traitement(Base):
@@ -22,7 +24,7 @@ class Traitement(Base):
     numero_ligne = Column(SmallInteger)
     date_debut = Column(Date)
     date_fin = Column(Date)
-    reponse = Column(String(20))
+    reponse = Column(Enum(Reponse, name="t_reponse", schema="public", native_enum=True, create_type=False, validate_strings=True))
     toxicite_residuelle = Column(Boolean, default=False)
     type_toxicite = Column(String(120))
     termine_comme_prevu = Column(Boolean)

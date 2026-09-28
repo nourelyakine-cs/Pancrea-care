@@ -33,7 +33,7 @@ class EvaluationCreate(BaseModel):
 
     date_evaluation: date
     contexte: ContexteEvaluation = "diagnostic"
-    ecog: int | None = Field(default=None, ge=0, le=5)
+    ecog: int | None = Field(default=None, ge=0, le=4)
     etat_nutritionnel: EtatNutritionnel = "inconnu"
     douleur_presente: bool | None = None
     intensite_douleur: int | None = Field(default=None, ge=0, le=10)
@@ -46,7 +46,7 @@ class EvaluationUpdate(BaseModel):
 
     date_evaluation: date | None = None
     contexte: ContexteEvaluation | None = None
-    ecog: int | None = Field(default=None, ge=0, le=5)
+    ecog: int | None = Field(default=None, ge=0, le=4)
     etat_nutritionnel: EtatNutritionnel | None = None
     douleur_presente: bool | None = None
     intensite_douleur: int | None = Field(default=None, ge=0, le=10)
@@ -257,6 +257,26 @@ class ComorbiditeEvaluationUpdate(BaseModel):
 
     severite: Severite | None = None
     note: str | None = None
+
+
+# --- Parcours thérapeutique --------------------------------------------------
+class ParcoursTherapeutiqueCreate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+    angiocholite: bool | None = None
+    comorbidites_lourdes: bool | None = None
+    tumeur_controlee: bool | None = None
+    nouvelles_metastases: bool | None = None
+    chirurgie_d_emblee: bool | None = None
+    traitement_medical_prevu: bool | None = None
+    pas_de_progression_apres_16_semaines_platine: bool | None = None
+    date_reevaluation: date | None = None
+    commentaire: str | None = None
+
+class ParcoursTherapeutiqueRead(ParcoursTherapeutiqueCreate):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+    id_parcours: int
+    id_evaluation: int
+    date_creation: datetime
 
 
 class ComorbiditeEvaluationRead(BaseModel):

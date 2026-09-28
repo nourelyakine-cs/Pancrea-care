@@ -12,7 +12,9 @@ from app.schemas.evaluation import (
     HistologieCreate,
     ImagerieCreate,
     MetastaseCreate,
+    ParcoursTherapeutiqueCreate,
 )
+from app.schemas.traitement import TraitementCreate
 
 
 class FullImagerieCreate(ImagerieCreate):
@@ -25,6 +27,8 @@ class FullEvaluationCreate(EvaluationCreate):
     histologie: HistologieCreate | None = None
     analyses: list[AnalyseCreate] = []
     comorbidites: list[ComorbiditeEvaluationCreate] = []
+    parcours: ParcoursTherapeutiqueCreate | None = None
+    traitements: list[TraitementCreate] = []
 
 
 class FullPatientCreate(BaseModel):

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -14,14 +14,15 @@ export default function ResetPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [tokens] = useState(() => {
+  const [tokens, setTokens] = useState({ access_token: "", refresh_token: "" });
+  useEffect(() => {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
-    return {
+    setTokens({
       access_token: params.get("access_token") ?? "",
       refresh_token: params.get("refresh_token") ?? "",
-    };
-  });
+    });
+  }, []);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -15,6 +15,7 @@ from app.models.evaluation import (
     Imagerie,
 )
 from app.models.patient import Patient
+from app.models.parcours_therapeutique import EvaluationParcoursTherapeutique
 from app.models.traitement import Traitement
 
 
@@ -106,7 +107,9 @@ def _treatment_facts(db: Session, id_dossier: int) -> dict[str, Any]:
 
     return {
         "ligne_traitement_actuelle": current_line,
-        "ligne_precedente": _normalise_protocole(previous.protocole.code if previous and previous.protocole else None),
+        "ligne_precedente": _normalise_protocole(
+            previous.protocole.code if previous and previous.protocole else (previous.notes if previous else None)
+        ),
         "reponse_traitement": current.reponse if current else None,
         "duree_chimiotherapie_mois": duration,
         "toxicite_residuelle": current.toxicite_residuelle if current else None,
@@ -124,6 +127,15 @@ def build_rule_facts(
     dossier = db.get(DossierPatient, evaluation.id_dossier)
     patient = db.get(Patient, dossier.id_patient) if dossier else None
     treatment = _treatment_facts(db, evaluation.id_dossier)
+    parcours = (
+        db.query(EvaluationParcoursTherapeutique)
+        .filter(EvaluationParcoursTherapeutique.id_evaluation == evaluation.id_evaluation)
+        .order_by(
+            EvaluationParcoursTherapeutique.date_reevaluation.desc().nullslast(),
+            EvaluationParcoursTherapeutique.id_parcours.desc(),
+        )
+        .first()
+    )
     return {
         "resecabilite": derived.resecabilite,
         "stade_global": derived.stade_global,
@@ -150,16 +162,18 @@ def build_rule_facts(
         "fusion_nrg1": histology.fusion_nrg1 if histology else None,
         "preuve_histologique": histology.preuve_histologique if histology else None,
         "patient_non_operable": _patient_non_operable(
-            _comorbidites_lourdes(db, evaluation.id_evaluation),
+            _comorbidites_lourdes(db, evaluation.id_evaluation)
+            or (parcours.comorbidites_lourdes is True if parcours else False),
             evaluation.etat_nutritionnel,
             evaluation.ecog,
         ),
-        # Ces champs nécessitent la migration parcours_therapeutique_clinique.
-        "tumeur_controlee": None,
-        "nouvelles_metastases": None,
-        "traitement_medical_prevu": None,
-        "chirurgie_d_emblee": None,
-        "angiocholite": None,
-        "pas_de_progression_apres_16_semaines_platine": None,
+        "tumeur_controlee": parcours.tumeur_controlee if parcours else None,
+        "nouvelles_metastases": parcours.nouvelles_metastases if parcours else None,
+        "traitement_medical_prevu": parcours.traitement_medical_prevu if parcours else None,
+        "chirurgie_d_emblee": parcours.chirurgie_d_emblee if parcours else None,
+        "angiocholite": parcours.angiocholite if parcours else None,
+        "pas_de_progression_apres_16_semaines_platine": (
+            parcours.pas_de_progression_apres_16_semaines_platine if parcours else None
+        ),
         **treatment,
     }
