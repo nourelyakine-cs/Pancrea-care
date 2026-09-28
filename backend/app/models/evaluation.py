@@ -278,6 +278,14 @@ class Imagerie(Base):
     evaluation = relationship("EvaluationClinique")
 
 
+class SiteMetastase(str, enum.Enum):
+    hepatique = "hepatique"
+    peritoneale = "peritoneale"
+    pulmonaire = "pulmonaire"
+    osseuse = "osseuse"
+    autre = "autre"
+
+
 class MetastaseLocalisation(Base):
     __tablename__ = "metastase_localisation"
 
@@ -287,12 +295,9 @@ class MetastaseLocalisation(Base):
         Enum(
             SiteMetastase,
             name="t_site_metastase",
-            schema="public",
-            native_enum=True,
-            create_type=False,
-            validate_strings=True,
+            create_type=False
         ),
-        nullable=False,
+        nullable=False
     )
     detail = Column(Text)
 

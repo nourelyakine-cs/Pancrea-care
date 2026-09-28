@@ -8,6 +8,12 @@ from supabase_auth.errors import AuthApiError, AuthSessionMissingError, UserDoes
 from app.config import settings
 from app.database import get_db
 from app.models.medecin import Medecin
+from app.schemas.auth import (
+    PASSWORD_POLICY,
+    PasswordPolicy,
+    describe_password_errors,
+    failed_password_rules,
+)
 from app.supabase import get_current_user, supabase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -83,8 +89,26 @@ class LoginRequest(BaseModel):
     password: str
 
 
+@router.get("/password-policy", response_model=PasswordPolicy)
+def password_policy():
+    """Règles de mot de passe en vigueur.
+
+    Route publique : elle est consommée par le formulaire de connexion /
+    d'inscription pour afficher au médecin ce qu'il lui reste à satisfaire,
+    avant même l'envoi du formulaire.
+    """
+    return PASSWORD_POLICY
+
+
 @router.post("/signup")
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
+    echecs = failed_password_rules(payload.password)
+    if echecs:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=describe_password_errors(payload.password),
+        )
+
     try:
         res = supabase.auth.sign_up(
             {
@@ -161,6 +185,13 @@ def forgot_password(payload: ForgotPasswordRequest):
 
 @router.post("/reset-password")
 def reset_password(payload: ResetPasswordRequest):
+    echecs = failed_password_rules(payload.new_password)
+    if echecs:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=describe_password_errors(payload.new_password),
+        )
+
     try:
         supabase.auth.set_session(payload.access_token, payload.refresh_token)
         supabase.auth.update_user({"password": payload.new_password})

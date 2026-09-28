@@ -37,6 +37,28 @@ export const forgotPassword = (email: string) =>
 export const resetPassword = (access_token: string, refresh_token: string, new_password: string) =>
   request<{ message: string }>("/auth/reset-password", { access_token, refresh_token, new_password });
 
+// Règles de mot de passe appliquées par l'API : le formulaire les consomme
+// pour afficher au médecin ce qu'il reste à respecter avant l'envoi.
+export interface PasswordPolicy {
+  min_length: number;
+  require_lowercase: boolean;
+  require_uppercase: boolean;
+  require_digit: boolean;
+}
+
+// Règles par défaut, identiques à celles du backend. Servent de repli si
+// l'endpoint est injoignable : l'utilisateur voit les exigences plutôt qu'un
+// formulaire muet.
+export const DEFAULT_PASSWORD_POLICY: PasswordPolicy = {
+  min_length: 8,
+  require_lowercase: true,
+  require_uppercase: true,
+  require_digit: true,
+};
+
+export const getPasswordPolicy = () =>
+  request<PasswordPolicy>("/auth/password-policy", undefined, "GET").catch(() => DEFAULT_PASSWORD_POLICY);
+
 // --- Types backend (schemas Pydantic) ---------------------------------------
 
 export interface FullPatientRead {
@@ -102,6 +124,92 @@ export const updatePatient = (
     adresse?: string | null;
   },
 ) => request<PatientRead>(`/patients/${idPatient}`, payload, "PUT");
+
+// Fiche consolidée d'un patient pour l'écran « Voir Détails ».
+export interface PatientDetail {
+  id_patient: number;
+  nom: string;
+  prenom: string;
+  date_naissance: string | null;
+  age: number | null;
+  sexe: string | null;
+  telephone: string | null;
+  email: string | null;
+  adresse: string | null;
+
+  id_dossier: number | null;
+  statut_dossier: string | null;
+  id_evaluation: number | null;
+  date_derniere_evaluation: string | null;
+  contexte: string | null;
+
+  ecog: number | null;
+  etat_nutritionnel: string | null;
+  douleur_presente: boolean | null;
+  intensite_douleur: number | null;
+  ictere: boolean | null;
+  angiocholite: boolean | null;
+  cholestase: boolean | null;
+  diabete: string | null;
+  comorbidites_lourdes: boolean;
+  comorbidites: string[];
+
+  ca19_9: number | null;
+  ca19_9_multiple_lsn: number | null;
+  bilirubine: number | null;
+  bilirubine_ratio_lsn: number | null;
+  statut_dpd: string | null;
+  albuminemie: number | null;
+
+  id_imagerie: number | null;
+  type_imagerie: string | null;
+  date_imagerie: string | null;
+  localisation_tumorale: string | null;
+  taille_tumorale_cm: number | null;
+  contact_ams: string | null;
+  contact_tronc_coeliaque: string | null;
+  contact_art_hepatique: string | null;
+  contact_vms_vp: string | null;
+  extension_ganglionnaire_regionale: boolean | null;
+  extension_ganglionnaire_distance: boolean | null;
+  metastases_presentes: boolean | null;
+  sites_metastases: string[];
+
+  categorie_t: string | null;
+  categorie_n: string | null;
+  categorie_m: string | null;
+  stade_global: string | null;
+  resecabilite: string | null;
+  critere_abc_a: string | null;
+  critere_abc_b: boolean | null;
+  critere_abc_c: boolean | null;
+  sous_categorie_abc: string | null;
+  date_calcul: string | null;
+
+  preuve_histologique: boolean | null;
+  statut_brca_germinal: string | null;
+  statut_kras: string | null;
+  statut_msi_dmmr: string | null;
+  fusion_ntrk: string | null;
+  fusion_nrg1: string | null;
+
+  ligne_traitement_actuelle: number | null;
+  reponse_traitement_en_cours: string | null;
+  traitements_recus: string[];
+  traitements_recus_texte: string | null;
+  ligne_precedente: string | null;
+  duree_chimiotherapie_mois: number | null;
+  tumeur_controlee: boolean | null;
+  nouvelles_metastases: boolean | null;
+  chirurgie_d_emblee: boolean | null;
+  traitement_medical_prevu: boolean | null;
+  pas_de_progression_apres_16_semaines_platine: boolean | null;
+  toxicite_residuelle: boolean | null;
+  details_toxicite: string | null;
+}
+
+export const getPatientDetail = (idPatient: number | string) =>
+  request<PatientDetail>(`/patients/${idPatient}/detail`, undefined, "GET");
 
 export interface DetailBiologie {
   ca19_9: number | null;

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import logoImg from "@/assets/logo.png";
 import { resetPassword } from "@/lib/api";
+import PasswordRequirements from "@/components/PasswordRequirements";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -14,15 +15,6 @@ export default function ResetPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [tokens, setTokens] = useState({ access_token: "", refresh_token: "" });
-  useEffect(() => {
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    setTokens({
-      access_token: params.get("access_token") ?? "",
-      refresh_token: params.get("refresh_token") ?? "",
-    });
-  }, []);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,14 +22,21 @@ export default function ResetPasswordPage() {
       setError("Les deux mots de passe ne correspondent pas.");
       return;
     }
-    if (!tokens.access_token || !tokens.refresh_token) {
+    if (password.length === 0) {
+      setError("Veuillez saisir un nouveau mot de passe.");
+      return;
+    }
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const access_token = params.get("access_token") ?? "";
+    const refresh_token = params.get("refresh_token") ?? "";
+    if (!access_token || !refresh_token) {
       setError("Lien de réinitialisation invalide ou expiré. Relancez la procédure.");
       return;
     }
     setIsLoading(true);
     setError("");
     try {
-      await resetPassword(tokens.access_token, tokens.refresh_token, password);
+      await resetPassword(access_token, refresh_token, password);
       setIsSuccess(true);
       setTimeout(() => {
         router.push("/login");
@@ -77,6 +76,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#209BBF] focus:ring-2 focus:ring-[#209BBF]/20 outline-none text-sm bg-gray-50/50"
                 />
+                <PasswordRequirements password={password} className="mt-2" />
               </div>
 
               <div>
