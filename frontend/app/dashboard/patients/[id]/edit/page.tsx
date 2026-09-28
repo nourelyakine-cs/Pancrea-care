@@ -26,7 +26,7 @@ import {
 } from "@/lib/api";
 
 const initialData = {
-  nom: "", prenom: "", dateNaissance: "", sexe: "", telephone: "", adresse: "", age: "", ecog: 0, etatNutritionnel: "normal", comorbiditesLourdes: false, douleur: "absente", intensiteDouleur: "", ictere: false, angiocholite: false, diabete: "absent", cholestase: false, patientNonOperable: false, ca199: "", bilirubine: "", lsnBilirubine: 21, statutDpd: "normal", albuminemie: "", localisationTumorale: "tête/crochet", tailleTumorale: "", contactAms: "pas de contact", contactTroncCoeliaque: "pas de contact", contactAhc: "pas de contact", contactVmsVp: "<180° sans irrégularité", adenopathieRegionale: false, adenopathieDistance: false, metastases: false, sitesMetastases: [], categorieT: "T1a", categorieN: "N0", categorieM: "M0", preuveHistologique: false, statutBrca: "non testé", statutKras: "non testé", statutMsiDmmr: "non testé", fusionNtrk: "non testé", fusionNrg1: "non testé", ligneTraitementActuelle: 1, reponseTraitementEnCours: "stable", traitementsRecusTexte: "", traitementsRecus: [], lignePrecedente: "", dureeChimiotherapieMois: "", tumeurControle: false, nouvellesMetastases: false, chirurgieDembleePrevue: false, traitementMedicalPrevu: false, pasDeProgressionApres16SemainesPlatine: false, toxiciteResiduelle: false, detailsToxicite: "",
+  nom: "", prenom: "", dateNaissance: "", sexe: "", telephone: "", adresse: "", age: "", ecog: 0, etatNutritionnel: "normal", comorbiditesLourdes: false, douleur: "absente", intensiteDouleur: "", ictere: false, angiocholite: false, diabete: "absent", cholestase: false, patientNonOperable: false, ca199: "", bilirubine: "", lsnBilirubine: 21, statutDpd: "normal", albuminemie: "", localisationTumorale: "tête/crochet", tailleTumorale: "", contactAms: "pas de contact", contactTroncCoeliaque: "pas de contact", contactAhc: "pas de contact", contactVmsVp: "<180° sans irrégularité", adenopathieRegionale: false, adenopathieDistance: false, metastases: false, sitesMetastases: [], categorieT: "T1a", categorieN: "N0", categorieM: "M0", preuveHistologique: false, statutBrca: "non testé", statutKras: "non testé", statutMsiDmmr: "non testé", fusionNtrk: "non testé", fusionNrg1: "non testé", ligneTraitementActuelle: 1, reponseTraitementPrecedent: "stable", traitementsRecusTexte: "", traitementsRecus: [], lignePrecedente: "", dureeChimiotherapieMois: "", tumeurControle: false, nouvellesMetastases: false, chirurgieDembleePrevue: false, traitementMedicalPrevu: false, pasDeProgressionApres16SemainesPlatine: false, toxiciteResiduelle: false, detailsToxicite: "",
 };
 
 // Valeurs backend (snake_case) -> options des formulaires (camelCase FR)
@@ -183,7 +183,7 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
     Boolean(patientData.localisationTumorale && patientData.tailleTumorale !== ""),
     Boolean(patientData.categorieT && patientData.categorieN && patientData.categorieM),
     true,
-    Boolean(patientData.ligneTraitementActuelle && patientData.reponseTraitementEnCours),
+    Boolean(patientData.ligneTraitementActuelle && patientData.reponseTraitementPrecedent),
   ];
   const isStepValid = (step: number) => validity[step - 1] ?? true;
   const canAccessStep = (step: number) => step === 1 || Array.from({ length: step - 1 }, (_, i) => i + 1).every(isStepValid);

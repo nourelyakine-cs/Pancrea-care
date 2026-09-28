@@ -22,10 +22,43 @@ _REQUIRED: dict[str, set[str]] = {
 }
 _DISPLAY_ONLY = {"R18": {"fusion_ntrk", "fusion_nrg1", "statut_kras", "statut_msi_dmmr"}}
 
+# Ces champs permettent de savoir si une règle est réellement applicable.
+# Une règle non applicable doit être "non_declenchee", pas "ignoree".
+_APPLICABILITY_FIELDS: dict[str, set[str]] = {
+    "R09": {"resecabilite", "metastases", "tumeur_controlee"},
+    "R15": {"metastases", "ligne_traitement_actuelle"},
+    "R16": {"metastases", "ligne_traitement_actuelle"},
+}
+
 
 def _criteria_fields(code: str) -> set[str]:
-    fields = _REQUIRED.get(code) or _DISPLAY_ONLY.get(code, set())
+    fields = (
+        _REQUIRED.get(code, set())
+        | _DISPLAY_ONLY.get(code, set())
+        | _APPLICABILITY_FIELDS.get(code, set())
+    )
     return fields | {"ca19_9"} if code == "R01" else fields
+
+
+def _is_applicable(code: str, facts: dict[str, Any]) -> bool | None:
+    """Retourne True/False, ou None si les critères d'applicabilité manquent."""
+    if code == "R09":
+        context = ("resecabilite", "metastases", "tumeur_controlee")
+        if any(facts.get(field) is None for field in context):
+            return None
+        return (
+            facts.get("resecabilite") == "localement_avance"
+            and facts.get("metastases") is False
+            and facts.get("tumeur_controlee") is True
+        )
+
+    if code in {"R15", "R16"}:
+        if facts.get("metastases") is None or facts.get("ligne_traitement_actuelle") is None:
+            return None
+        current_line = facts.get("ligne_traitement_actuelle")
+        return facts.get("metastases") is True and isinstance(current_line, (int, float)) and current_line >= 2
+
+    return True
 
 
 def _flat(result: Any) -> list[Any]:
@@ -37,22 +70,100 @@ def _flat(result: Any) -> list[Any]:
 def apply_safe(facts: dict[str, Any]) -> list[dict[str, Any]]:
     matched = []
     for code, fn, reference, grade in RULES:
+        applicable = _is_applicable(code, facts)
+        if applicable is None:
+            continue
+        if not applicable:
+            continue
+
         required = _REQUIRED.get(code, set())
         if any(facts.get(name) is None for name in required):
             continue
+
         for conclusion in _flat(fn(facts)):
-            matched.append({"code": code, "conclusion": conclusion, "reference": reference, "grade": grade, "criteres_evalues": {name: facts.get(name) for name in sorted(_criteria_fields(code))}})
+            matched.append(
+                {
+                    "code": code,
+                    "conclusion": conclusion,
+                    "reference": reference,
+                    "grade": grade,
+                    "criteres_evalues": {
+                        name: facts.get(name)
+                        for name in sorted(_criteria_fields(code))
+                    },
+                }
+            )
     return matched
 
 
 def build_decision_path(facts: dict[str, Any]) -> list[dict[str, Any]]:
     path = []
     for code, fn, reference, grade in RULES:
+        applicable = _is_applicable(code, facts)
+
+        if applicable is None:
+            missing_context = sorted(
+                field
+                for field in _APPLICABILITY_FIELDS.get(code, set())
+                if facts.get(field) is None
+            )
+            if not missing_context:
+                missing_context = sorted(
+                    field
+                    for field in _REQUIRED.get(code, set())
+                    if facts.get(field) is None
+                )
+            path.append(
+                {
+                    "code": code,
+                    "statut": "ignoree",
+                    "motif": "donnees_manquantes",
+                    "champs_manquants": missing_context,
+                }
+            )
+            continue
+
+        if not applicable:
+            path.append(
+                {
+                    "code": code,
+                    "statut": "non_declenchee",
+                    "reference": reference,
+                    "grade": grade,
+                    "criteres_evalues": {
+                        name: facts.get(name)
+                        for name in sorted(_criteria_fields(code))
+                    },
+                    "nombre_conclusions": 0,
+                }
+            )
+            continue
+
         required = _REQUIRED.get(code, set())
         missing = sorted(name for name in required if facts.get(name) is None)
         if missing:
-            path.append({"code": code, "statut": "ignoree", "motif": "donnees_manquantes", "champs_manquants": missing})
+            path.append(
+                {
+                    "code": code,
+                    "statut": "ignoree",
+                    "motif": "donnees_manquantes",
+                    "champs_manquants": missing,
+                }
+            )
             continue
+
         conclusions = _flat(fn(facts))
-        path.append({"code": code, "statut": "declenchee" if conclusions else "non_declenchee", "reference": reference, "grade": grade, "criteres_evalues": {name: facts.get(name) for name in sorted(_criteria_fields(code))}, "nombre_conclusions": len(conclusions)})
+        path.append(
+            {
+                "code": code,
+                "statut": "declenchee" if conclusions else "non_declenchee",
+                "reference": reference,
+                "grade": grade,
+                "criteres_evalues": {
+                    name: facts.get(name)
+                    for name in sorted(_criteria_fields(code))
+                },
+                "nombre_conclusions": len(conclusions),
+            }
+        )
     return path

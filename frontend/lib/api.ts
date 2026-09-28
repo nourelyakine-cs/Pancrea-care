@@ -299,31 +299,54 @@ function buildEvaluationPayload(data: Record<string, any>) {
   const dateDebutCourante = duree != null
     ? new Date(Date.now() - duree * 30.4375 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     : null;
-  const reponse = data.reponseTraitementEnCours === "réponse"
-    ? "reponse"
-    : data.reponseTraitementEnCours || null;
+  const reponseTraitementPrecedent = data.reponseTraitementPrecedent || data.reponseTraitementEnCours || null;
   const currentLine = Number(data.ligneTraitementActuelle || 1);
-  const received = Array.isArray(data.traitementsRecus) ? data.traitementsRecus.filter(Boolean) : [];
+  const received = Array.isArray(data.traitementsRecus)
+    ? data.traitementsRecus.filter(Boolean)
+    : [];
+
+  if (currentLine >= 2 && received.length === 0) {
+    throw new Error(
+      "Le traitement précédent est obligatoire à partir de la deuxième ligne."
+    );
+  }
+
+  if (currentLine >= 2 && !reponseTraitementPrecedent) {
+    throw new Error(
+      "La réponse au traitement précédent est obligatoire à partir de la deuxième ligne."
+    );
+  }
+
+  if (duree == null) {
+    throw new Error("La durée de la chimiothérapie doit être renseignée.");
+  }
+
   const previousTreatments = received.map((name: string, index: number) => ({
     numero_ligne: Math.max(1, currentLine - received.length + index),
     date_debut: null,
     date_fin: null,
-    reponse: null,
+    reponse: index === received.length - 1
+      ? reponseTraitementPrecedent
+      : null,
     toxicite_residuelle: false,
     type_toxicite: null,
     termine_comme_prevu: null,
     notes: name,
   }));
-  const traitements = [...previousTreatments, {
-    numero_ligne: currentLine,
-    date_debut: dateDebutCourante,
-    date_fin: null,
-    reponse,
-    toxicite_residuelle: Boolean(data.toxiciteResiduelle),
-    type_toxicite: data.detailsToxicite || null,
-    termine_comme_prevu: null,
-    notes: null,
-  }];
+
+  const traitements = [
+    ...previousTreatments,
+    {
+      numero_ligne: currentLine,
+      date_debut: dateDebutCourante,
+      date_fin: null,
+      reponse: null,
+      toxicite_residuelle: Boolean(data.toxiciteResiduelle),
+      type_toxicite: data.detailsToxicite || null,
+      termine_comme_prevu: null,
+      notes: null,
+    },
+  ];
 
   return {
     date_evaluation: today,

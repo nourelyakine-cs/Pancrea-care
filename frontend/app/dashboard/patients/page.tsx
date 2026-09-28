@@ -65,7 +65,7 @@ export interface PatientData {
 
   // A.7 Parcours Thérapeutique
   ligneTraitementActuelle?: number;
-  reponseTraitementEnCours?: string;
+  reponseTraitementPrecedent?: string;
   traitementsRecusTexte?: string;
   traitementsRecus?: string[];
   lignePrecedente?: string;
@@ -530,7 +530,7 @@ export default function PatientsPage() {
                     </div>
                     <div>
                       <span className="text-gray-400 block">Réponse au traitement en cours</span>
-                      <b>{selectedPatient.reponseTraitementEnCours ?? "N/A"}</b>
+                      <b>{selectedPatient.reponseTraitementPrecedent ?? "N/A"}</b>
                     </div>
 
                     <div className="col-span-2 pb-2 border-b border-gray-200/60">

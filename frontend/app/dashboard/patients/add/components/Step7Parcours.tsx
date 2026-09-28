@@ -69,16 +69,18 @@ export default function Step7Parcours({ data, updateData, submitting = false, er
           </select>
         </div>
 
-        {/* Réponse au traitement en cours */}
+        {/* Réponse au traitement précédent */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-1.5">Réponse au traitement en cours *</label>
+          <label className="block text-gray-700 font-semibold mb-1.5">Réponse au traitement précédent *</label>
           <select
-            name="reponseTraitementEnCours"
-            value={data.reponseTraitementEnCours || "stable"}
+            name="reponseTraitementPrecedent"
+            value={data.reponseTraitementPrecedent || ""}
+            required={Number(data.ligneTraitementActuelle || 1) >= 2}
             onChange={handleChange}
             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#209BBF]"
           >
-            <option value="réponse">Réponse</option>
+            <option value="">Sélectionner une réponse</option>
+            <option value="reponse">Réponse</option>
             <option value="stable">Stable</option>
             <option value="progression">Progression</option>
           </select>
@@ -86,32 +88,35 @@ export default function Step7Parcours({ data, updateData, submitting = false, er
 
         {/* Traitements déjà reçus */}
         <div className="sm:col-span-2">
-          <label className="block text-gray-700 font-semibold mb-1.5">Traitements déjà reçus (séparés par des virgules)</label>
+          <label className="block text-gray-700 font-semibold mb-1.5">Traitement(s) précédent(s) (séparés par des virgules)</label>
           <input
             type="text"
             name="traitementsRecusTexte"
-            placeholder="ex. FOLFIRINOX, Gemcitabine"
+            placeholder="ex. Gemcitabine ou FOLFIRINOX"
             value={data.traitementsRecusTexte ?? ""}
             onChange={handleTraitementsRecusChange}
+            required={Number(data.ligneTraitementActuelle || 1) >= 2}
             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#209BBF]"
           />
           {data.lignePrecedente && (
             <span className="text-[10px] font-semibold text-[#1D7893] mt-1 block">
-              Dernier traitement calculé : {data.lignePrecedente}
+              Traitement précédent calculé : {data.lignePrecedente}
             </span>
           )}
         </div>
 
         {/* Durée chimiothérapie */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-1.5">Durée chimiothérapie (mois)</label>
+          <label className="block text-gray-700 font-semibold mb-1.5">Durée de la chimiothérapie en cours (mois) *</label>
           <input
             type="number"
             step="0.5"
             name="dureeChimiotherapieMois"
+            min="0"
             placeholder="ex. 5"
             value={data.dureeChimiotherapieMois ?? ""}
             onChange={handleChange}
+            required
             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#209BBF]"
           />
           <span className="text-[10px] text-gray-400 mt-1 block">Seuil critique : ≥ 4 mois (R9)</span>

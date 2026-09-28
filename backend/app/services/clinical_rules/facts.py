@@ -110,7 +110,11 @@ def _treatment_facts(db: Session, id_dossier: int) -> dict[str, Any]:
         "ligne_precedente": _normalise_protocole(
             previous.protocole.code if previous and previous.protocole else (previous.notes if previous else None)
         ),
-        "reponse_traitement": current.reponse if current else None,
+        "reponse_traitement": (
+            previous.reponse
+            if previous and previous.reponse is not None
+            else current.reponse if current else None
+        ),
         "duree_chimiotherapie_mois": duration,
         "toxicite_residuelle": current.toxicite_residuelle if current else None,
     }
@@ -177,3 +181,4 @@ def build_rule_facts(
         ),
         **treatment,
     }
+
