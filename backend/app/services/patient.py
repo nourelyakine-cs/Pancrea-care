@@ -2,8 +2,6 @@ import enum
 from datetime import date
 from decimal import Decimal
 
-from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.donnees_derivees import DonneesDerivees
@@ -20,30 +18,10 @@ from app.models.patient import Patient
 from app.models.parcours_therapeutique import EvaluationParcoursTherapeutique
 from app.models.reference import Comorbidite
 from app.models.traitement import Traitement
-from app.schemas.patient import PatientCreate, PatientUpdate
+from app.schemas.patient import PatientUpdate
 from app.schemas.patient_detail import PatientDetailRead
+from app.services import acces
 from app.services.audit import log_action
-
-
-def create_patient(
-    db: Session,
-    payload: PatientCreate,
-    medecin_id: int | None = None,
-) -> Patient:
-    patient = Patient(**payload.model_dump())
-    db.add(patient)
-    db.flush()
-    log_action(
-        db,
-        medecin_id=medecin_id,
-        action="patient_create",
-        type_entite="patient",
-        id_entite=patient.id_patient,
-        detail=payload.model_dump(),
-    )
-    db.commit()
-    db.refresh(patient)
-    return patient
 
 
 def list_patients(
@@ -52,8 +30,11 @@ def list_patients(
     sexe: str | None = None,
     skip: int = 0,
     limit: int = 100,
+    medecin_id: int | None = None,
 ) -> list[Patient]:
-    query = db.query(Patient)
+    """Patients du médecin connecté : ses dossiers référents + l'historique
+    sans référent (cf. `services.acces`)."""
+    query = acces.patients_visibles(db, medecin_id)
     if nom:
         query = query.filter(Patient.nom.ilike(f"%{nom}%"))
     if sexe:
@@ -141,14 +122,16 @@ def _attach_dernier_bilan(db: Session, patients: list[Patient]) -> None:
         patient.categorie_m = derivee.categorie_m if derivee else None
 
 
-def get_patient(db: Session, id_patient: int) -> Patient:
-    patient = db.get(Patient, id_patient)
-    if patient is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Patient not found",
-        )
-    return patient
+def get_patient(
+    db: Session,
+    id_patient: int,
+    medecin_id: int | None = None,
+) -> Patient:
+    """Patient par son id, s'il est accessible au médecin connecté.
+
+    `medecin_id is None` désactive le contrôle (mode démo / usages internes).
+    """
+    return acces.exiger_patient(db, id_patient, medecin_id)
 
 
 # --- Fiche détaillée ("Voir Détails") ---------------------------------------
@@ -387,7 +370,11 @@ def _parcours_traitements_detail(traitements: list[Traitement]) -> dict:
     }
 
 
-def get_patient_detail(db: Session, id_patient: int) -> PatientDetailRead:
+def get_patient_detail(
+    db: Session,
+    id_patient: int,
+    medecin_id: int | None = None,
+) -> PatientDetailRead:
     """Fiche complète d'un patient pour l'écran « Voir Détails ».
 
     Agrège en un seul payload l'identité, la dernière évaluation (clinique,
@@ -395,7 +382,7 @@ def get_patient_detail(db: Session, id_patient: int) -> PatientDetailRead:
     le dernier bilan CDSS. Un patient sans dossier ou sans évaluation renvoie
     malgré tout ses données d'identité, les autres champs restant `None`.
     """
-    patient = get_patient(db, id_patient)
+    patient = get_patient(db, id_patient, medecin_id)
 
     dossier = (
         db.query(DossierPatient)
@@ -476,7 +463,7 @@ def update_patient(
     payload: PatientUpdate,
     medecin_id: int | None = None,
 ) -> Patient:
-    patient = get_patient(db, id_patient)
+    patient = get_patient(db, id_patient, medecin_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(patient, key, value)
     log_action(
@@ -490,33 +477,3 @@ def update_patient(
     db.commit()
     db.refresh(patient)
     return patient
-
-
-def delete_patient(
-    db: Session,
-    id_patient: int,
-    medecin_id: int | None = None,
-) -> None:
-    patient = get_patient(db, id_patient)
-    log_action(
-        db,
-        medecin_id=medecin_id,
-        action="patient_delete",
-        type_entite="patient",
-        id_entite=patient.id_patient,
-        detail={"nom": patient.nom, "prenom": patient.prenom},
-    )
-    try:
-        db.delete(patient)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "Impossible de supprimer ce patient : un dossier clinique lui est "
-                "associé. Pour respecter la traçabilité médico-légale, clôturez ou "
-                "archivez le dossier (statut 'clos'/'archive') au lieu de supprimer "
-                "le patient."
-            ),
-        )

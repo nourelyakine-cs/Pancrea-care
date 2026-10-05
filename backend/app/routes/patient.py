@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+﻿from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -6,7 +6,6 @@ from app.models.medecin import Medecin
 from app.schemas.evaluation import EvaluationResumeRead
 from app.schemas.full_patient import FullEvaluationCreate, FullPatientCreate, FullPatientRead
 from app.schemas.patient import (
-    PatientCreate,
     PatientListItemRead,
     PatientRead,
     PatientUpdate,
@@ -15,7 +14,7 @@ from app.schemas.patient_detail import PatientDetailRead
 from app.services import evaluation as evaluation_service
 from app.services import full_patient as full_patient_service
 from app.services import patient as patient_service
-from app.supabase import get_medecin_for_user
+from app.dependencies import get_medecin_for_user
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -31,15 +30,6 @@ def create_patient_full(
     return full_patient_service.create_full_patient(db, payload, medecin.id_medecin)
 
 
-@router.post("/", response_model=PatientRead, status_code=201)
-def create_patient(
-    payload: PatientCreate,
-    medecin: Medecin = Depends(get_medecin_for_user),
-    db: Session = Depends(get_db),
-):
-    return patient_service.create_patient(db, payload, medecin.id_medecin)
-
-
 @router.get("/", response_model=list[PatientListItemRead])
 def list_patients(
     nom: str | None = None,
@@ -49,7 +39,7 @@ def list_patients(
     medecin: Medecin = Depends(get_medecin_for_user),
     db: Session = Depends(get_db),
 ):
-    return patient_service.list_patients(db, nom, sexe, skip, limit)
+    return patient_service.list_patients(db, nom, sexe, skip, limit, medecin.id_medecin)
 
 
 @router.get("/{id_patient}/evaluations", response_model=list[EvaluationResumeRead])
@@ -59,7 +49,7 @@ def list_patient_evaluations(
     db: Session = Depends(get_db),
 ):
     """Retourne l'historique complet des évaluations d'un patient."""
-    return evaluation_service.list_patient_evaluations(db, id_patient)
+    return evaluation_service.list_patient_evaluations(db, id_patient, medecin.id_medecin)
 
 
 @router.post("/{id_patient}/evaluations", response_model=FullPatientRead, status_code=201)
@@ -85,7 +75,7 @@ def get_patient_detail(
     """Fiche complète d'un patient pour l'écran « Voir Détails » : identité,
     dernière évaluation (clinique, biologie, imagerie, histologie, parcours
     thérapeutique) et dernier bilan CDSS, en un seul payload."""
-    return patient_service.get_patient_detail(db, id_patient)
+    return patient_service.get_patient_detail(db, id_patient, medecin.id_medecin)
 
 
 @router.get("/{id_patient}", response_model=PatientRead)
@@ -94,7 +84,7 @@ def get_patient(
     medecin: Medecin = Depends(get_medecin_for_user),
     db: Session = Depends(get_db),
 ):
-    return patient_service.get_patient(db, id_patient)
+    return patient_service.get_patient(db, id_patient, medecin.id_medecin)
 
 
 @router.put("/{id_patient}", response_model=PatientRead)
@@ -105,12 +95,3 @@ def update_patient(
     db: Session = Depends(get_db),
 ):
     return patient_service.update_patient(db, id_patient, payload, medecin.id_medecin)
-
-
-@router.delete("/{id_patient}", status_code=204)
-def delete_patient(
-    id_patient: int,
-    medecin: Medecin = Depends(get_medecin_for_user),
-    db: Session = Depends(get_db),
-):
-    patient_service.delete_patient(db, id_patient, medecin.id_medecin)

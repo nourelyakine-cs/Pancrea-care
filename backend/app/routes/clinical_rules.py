@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+﻿from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -8,9 +8,10 @@ from app.schemas.clinical_rules import (
     DonneesDeriveesRead,
     RecommendationsResponse,
 )
+from app.services import acces
 from app.services.clinical_rules.service import calculate_and_persist
 from app.services.clinical_rules.recommendation_service import generate_recommendations
-from app.supabase import get_medecin_for_user
+from app.dependencies import get_medecin_for_user
 
 router = APIRouter(prefix="/clinical-rules", tags=["clinical-rules"])
 
@@ -25,6 +26,7 @@ def calculate_clinical_rules(
     medecin: Medecin = Depends(get_medecin_for_user),
     db: Session = Depends(get_db),
 ):
+    acces.exiger_evaluation(db, id_evaluation, medecin.id_medecin)
     return calculate_and_persist(db, id_evaluation, payload)
 
 
@@ -37,4 +39,5 @@ def get_recommendations(
     medecin: Medecin = Depends(get_medecin_for_user),
     db: Session = Depends(get_db),
 ):
+    acces.exiger_evaluation(db, id_evaluation, medecin.id_medecin)
     return generate_recommendations(db, id_evaluation)

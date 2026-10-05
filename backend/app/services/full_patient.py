@@ -17,6 +17,7 @@ from app.models.parcours_therapeutique import EvaluationParcoursTherapeutique
 from app.models.traitement import Traitement
 from app.models.patient import Patient
 from app.schemas.full_patient import FullEvaluationCreate, FullPatientCreate
+from app.services import acces
 from app.services.audit import log_action
 
 
@@ -174,12 +175,7 @@ def create_evaluation_for_patient(
 ) -> dict:
     """Crée une nouvelle évaluation complète pour un patient existant
     (réutilise son dossier ouvert). Ne recrée ni le patient ni le dossier."""
-    patient = db.get(Patient, id_patient)
-    if patient is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient {id_patient} introuvable.",
-        )
+    patient = acces.exiger_patient(db, id_patient, medecin_id)
 
     dossier = (
         db.query(DossierPatient)
@@ -191,6 +187,11 @@ def create_evaluation_for_patient(
         dossier = DossierPatient(id_patient=id_patient, id_medecin_referent=medecin_id)
         db.add(dossier)
         db.flush()
+    elif not acces.dossier_accessible(db, dossier.id_dossier, medecin_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient {id_patient} introuvable.",
+        )
 
     result = _create_evaluation_and_decision(db, payload, dossier.id_dossier, medecin_id)
     db.commit()

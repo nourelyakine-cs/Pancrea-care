@@ -17,10 +17,6 @@ class PatientBase(BaseModel):
     adresse: str | None = None
 
 
-class PatientCreate(PatientBase):
-    pass
-
-
 class PatientUpdate(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 

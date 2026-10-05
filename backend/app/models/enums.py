@@ -7,6 +7,34 @@ class Sexe(str, enum.Enum):
     inconnu = "inconnu"
 
 
+class RoleCompte(str, enum.Enum):
+    """Rôle d'un compte. `super_admin` est le seul rôle habilité à valider,
+    bloquer ou réinitialiser un compte médecin."""
+
+    medecin = "medecin"
+    super_admin = "super_admin"
+
+
+class StatutCompte(str, enum.Enum):
+    """Cycle de vie d'un compte.
+
+    `en_attente` est l'état dans lequel tout médecin se trouve après
+    inscription : il ne peut pas se connecter tant que le super admin ne l'a
+    pas accepté. `bloque` est posé par l'admin (départ de l'établissement,
+    erreur sur l'identité professionnelle...) et levable par lui seul.
+    """
+
+    en_attente = "en_attente"
+    actif = "actif"
+    bloque = "bloque"
+
+
+class StatutDemandeReinit(str, enum.Enum):
+    en_attente = "en_attente"
+    traitee = "traitee"
+    annulee = "annulee"
+
+
 class ContexteUsage(str, enum.Enum):
     adjuvant = "adjuvant"
     neoadjuvant = "neoadjuvant"

@@ -12,23 +12,18 @@ from app.models import (
     traitement,
     decision,
 )  # noqa: F401  (import pour create_all)
-from app.models import donnees_derivees  # noqa: F401  (import pour create_all)
+from app.models import donnees_derivees, compte  # noqa: F401  (import pour create_all)
 from app.routes import (
     auth,
-    audit as audit_router,
-    decision as decision_router,
+    admin as admin_router,
     dossier as dossier_router,
-    evaluation as evaluation_router,
-    medecin as medecin_router,
     patient,
-    reference as reference_router,
-    traitement as traitement_router,
+    clinical_rules as clinical_rules_router,
 )
-from app.routes import clinical_rules as clinical_rules_router
 
 # Le schéma est géré par Supabase via backend/database/*.sql et ses migrations.
-# Ne pas exécuter create_all() à l’import : cela rendrait /health et /docs
-# indisponibles dès qu’une URL DATABASE_URL est temporairement inaccessible.
+# Ne pas exécuter create_all() à l'import : cela rendrait /health et /docs
+# indisponibles dès qu'une URL DATABASE_URL est temporairement inaccessible.
 
 app = FastAPI(title=settings.APP_NAME, environment=settings.ENVIRONMENT)
 
@@ -44,15 +39,11 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(admin_router.router)
 app.include_router(patient.router)
-app.include_router(medecin_router.router)
-app.include_router(audit_router.router)
 app.include_router(dossier_router.router)
-app.include_router(evaluation_router.router)
-app.include_router(traitement_router.router)
-app.include_router(reference_router.router)
-app.include_router(decision_router.router)
 app.include_router(clinical_rules_router.router)
+
 
 @app.get("/health")
 def health_check():

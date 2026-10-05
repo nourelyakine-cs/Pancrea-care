@@ -34,11 +34,11 @@ class PasswordPolicy(BaseModel):
         return actives
 
 
-# Supabase Auth n'impose par défaut qu'une longueur minimale (6 caractères) et
-# ne rend ses refus que sous forme de message opaque. On durcit ici le
-# minimum à 8 caractères + complexité, car l'application héberge des données
-# patients. La connexion n'est jamais bloquée par ces règles : un compte créé
-# avant ce durcissement doit rester accessible.
+# Ces règles sont plus strictes que le minimum de 6 caractères appliqué par
+# l'ancienne authentification, car la plateforme héberge des données patients.
+# Elles ne s'appliquent qu'aux mots de passe *nouveaux* : la connexion n'est
+# jamais bloquée par ces règles, pour qu'un compte créé avant le durcissement
+# reste accessible.
 PASSWORD_POLICY = PasswordPolicy(
     min_length=8,
     require_lowercase=True,
