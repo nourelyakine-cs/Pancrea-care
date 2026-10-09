@@ -1,7 +1,15 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
+export const TOKEN_KEY = "token";
+
+/** Retire la session locale. À appeler à la déconnexion : sans cela, un
+ *  jeton valide resterait dans le navigateur après « Se déconnecter ». */
+export const clearToken = () => {
+  if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
+};
+
 async function request<T>(path: string, body?: unknown, method: "GET" | "POST" | "PUT" | "DELETE" = body ? "POST" : "GET"): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -19,9 +27,54 @@ async function request<T>(path: string, body?: unknown, method: "GET" | "POST" |
   return data as T;
 }
 
-export const login = (email: string, password: string) =>
-  request<{ access_token: string }>("/auth/login", { email, password });
+// --- Authentification --------------------------------------------------------
 
+export type RoleCompte = "medecin" | "super_admin";
+export type StatutCompte = "en_attente" | "actif" | "bloque";
+
+export interface Compte {
+  id_compte: number;
+  email: string;
+  nom: string;
+  prenom: string;
+  role: RoleCompte;
+  statut: StatutCompte;
+  hopital?: string | null;
+  doit_changer_mdp: boolean;
+}
+
+export interface MedecinProfile {
+  id_medecin: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string | null;
+  hopital: string | null;
+}
+
+export interface Session {
+  access_token: string;
+  token_type: string;
+  compte: Compte;
+  doit_changer_mdp: boolean;
+}
+
+export interface SessionCourante {
+  compte: Compte;
+  medecin: MedecinProfile | null;
+}
+
+/**
+ * Connexion. Ne mémorise pas le jeton : l'appelant décide, parce que seul lui
+ * sait vers quel espace router (le rôle est dans la réponse).
+ */
+export const login = (email: string, password: string) =>
+  request<Session>("/auth/login", { email, password });
+
+/**
+ * Inscription. Le compte créé est **en attente de validation** : la réponse ne
+ * contient aucun jeton, il n'y a donc rien à mémoriser ici.
+ */
 export const signup = (payload: {
   nom: string;
   prenom: string;
@@ -29,13 +82,34 @@ export const signup = (payload: {
   password: string;
   telephone?: string;
   hopital?: string;
-}) => request<{ user: string; medecin_id: number; need_email_confirmation: boolean }>("/auth/signup", payload);
+}) =>
+  request<{ compte: Compte; message: string }>("/auth/signup", payload);
 
+/** Ouvre une demande de réinitialisation côté administration. */
 export const forgotPassword = (email: string) =>
-  request<{ message: string }>("/auth/forgot-password", { email });
+  request<{ message: string; delai_validite_minutes: number }>("/auth/forgot-password", { email });
 
-export const resetPassword = (access_token: string, refresh_token: string, new_password: string) =>
-  request<{ message: string }>("/auth/reset-password", { access_token, refresh_token, new_password });
+/** Applique le nouveau mot de passe à partir du jeton remis par l'admin. */
+export const resetPassword = (jeton: string, nouveauMotDePasse: string) =>
+  request<{ message: string }>("/auth/reset-password", {
+    jeton,
+    nouveau_mot_de_passe: nouveauMotDePasse,
+  });
+
+/** Change le mot de passe du compte connecté (ancien mot de passe exigé). */
+export const changePassword = (ancienMotDePasse: string, nouveauMotDePasse: string) =>
+  request<{ message: string }>("/auth/change-password", {
+    ancien_mot_de_passe: ancienMotDePasse,
+    nouveau_mot_de_passe: nouveauMotDePasse,
+  });
+
+/**
+ * Compte connecté + profil clinique éventuel.
+ *
+ * Sert à deux choses : router vers /admin ou /dashboard selon le rôle, et
+ * afficher l'identité réellement authentifiée plutôt qu'un nom codé en dur.
+ */
+export const getCurrentSession = () => request<SessionCourante>("/auth/me", undefined, "GET");
 
 // Règles de mot de passe appliquées par l'API : le formulaire les consomme
 // pour afficher au médecin ce qu'il reste à respecter avant l'envoi.
@@ -58,6 +132,84 @@ export const DEFAULT_PASSWORD_POLICY: PasswordPolicy = {
 
 export const getPasswordPolicy = () =>
   request<PasswordPolicy>("/auth/password-policy", undefined, "GET").catch(() => DEFAULT_PASSWORD_POLICY);
+
+// --- Administration ----------------------------------------------------------
+
+export interface CompteAdmin extends Compte {
+  telephone?: string | null;
+  id_medecin: number | null;
+  motif_blocage: string | null;
+  verrouille_jusqu_a: string | null;
+  date_activation: string | null;
+  date_derniere_connexion: string | null;
+  date_creation: string;
+}
+
+export interface DemandeReinitialisation {
+  id_demande: number;
+  id_compte: number;
+  email: string;
+  nom: string;
+  prenom: string;
+  hopital: string | null;
+  statut: string;
+  motif: string | null;
+  expire_le: string | null;
+  date_demande: string;
+  date_traitement: string | null;
+}
+
+export interface StatistiquesAdmin {
+  total_comptes: number;
+  comptes_actifs: number;
+  comptes_en_attente: number;
+  comptes_bloques: number;
+  demandes_reinitialisation_en_attente: number;
+  inscriptions_7_jours: number;
+  activations_7_jours: number;
+  connexions_7_jours: number;
+}
+
+export const getAdminStatistiques = () =>
+  request<StatistiquesAdmin>("/admin/statistiques", undefined, "GET");
+
+export const getAdminComptes = (options: { statut?: StatutCompte; recherche?: string } = {}) => {
+  const params = new URLSearchParams();
+  if (options.statut) params.set("statut", options.statut);
+  if (options.recherche) params.set("recherche", options.recherche);
+  const suffixe = params.toString();
+  return request<CompteAdmin[]>(`/admin/comptes${suffixe ? `?${suffixe}` : ""}`, undefined, "GET");
+};
+
+export const accepterCompte = (idCompte: number) =>
+  request<CompteAdmin>(`/admin/comptes/${idCompte}/accepter`, {});
+
+export const bloquerCompte = (idCompte: number, motif?: string) =>
+  request<CompteAdmin>(`/admin/comptes/${idCompte}/bloquer`, { motif: motif || null });
+
+export const debloquerCompte = (idCompte: number) =>
+  request<CompteAdmin>(`/admin/comptes/${idCompte}/debloquer`, {});
+
+export const definirMotDePasseTemporaire = (idCompte: number, nouveauMotDePasse: string) =>
+  request<CompteAdmin>(`/admin/comptes/${idCompte}/mot-de-passe-temporaire`, {
+    nouveau_mot_de_passe: nouveauMotDePasse,
+  });
+
+export const getDemandesReinitialisation = (statut = "en_attente") =>
+  request<DemandeReinitialisation[]>(
+    `/admin/demandes-reinitialisation?statut=${encodeURIComponent(statut)}`,
+    undefined,
+    "GET",
+  );
+
+export const genererLienReinitialisation = (idDemande: number) =>
+  request<{ id_demande: number; lien: string; expire_le: string; message: string }>(
+    `/admin/demandes-reinitialisation/${idDemande}/lien`,
+    {},
+  );
+
+export const cloturerDemandeReinitialisation = (idDemande: number, statut: "traitee" | "annulee") =>
+  request<number>(`/admin/demandes-reinitialisation/${idDemande}/cloturer?statut=${statut}`, {});
 
 // --- Types backend (schemas Pydantic) ---------------------------------------
 

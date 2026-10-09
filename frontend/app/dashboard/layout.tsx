@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGardeAcces } from "@/lib/use-garde-acces";
 import logoImg from "@/assets/logo.png";
 
 export default function DashboardLayout({
@@ -13,8 +14,29 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Garde l'accès au rôle médecin : un super admin est renvoyé vers /admin,
+  // un compte absent, bloqué ou expiré vers /login.
+  const { compte, medecin, chargement, deconnexion } = useGardeAcces("medecin");
+
+  const nomComplet = medecin ? `Dr. ${medecin.prenom} ${medecin.nom}`.trim() : "";
+  const initiales =
+    medecin && compte
+      ? `${(medecin.prenom || compte.prenom).charAt(0)}${(medecin.nom || compte.nom).charAt(0)}`.toUpperCase()
+      : "";
+
+  // Pendant la vérification du jeton, on n'affiche pas une coquille vide qui
+  // laisserait croire à un écran cassé.
+  if (chargement) {
+    return (
+      <div className="min-h-screen bg-[#F4F8FA] flex items-center justify-center font-serif">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-[#209BBF]/30 border-t-[#209BBF] rounded-full animate-spin mx-auto" />
+          <p className="mt-3 text-xs text-gray-500">Vérification de la session…</p>
+        </div>
+      </div>
+    );
+  }
 
   // Configuration des éléments du menu de navigation
   const navItems = [
@@ -31,8 +53,7 @@ export default function DashboardLayout({
   ];
 
   const handleLogout = () => {
-    // Redirection vers la page de connexion
-    router.push("/login");
+    deconnexion();
   };
 
   return (
@@ -116,21 +137,50 @@ export default function DashboardLayout({
         <div className="pt-6 border-t border-gray-100 space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-[#1D7893] text-white flex items-center justify-center font-bold text-xs shadow-sm">
-              DR
+              {initiales}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-[#1F3D4D] truncate">Dr. Sofiane Benali</p>
-              <p className="text-[10px] text-gray-400 truncate">Oncologue Hôpital</p>
+              <p className="text-xs font-bold text-[#1F3D4D] truncate">
+                {nomComplet || "Médecin"}
+              </p>
+              <p className="text-[10px] text-gray-400 truncate">
+                {medecin?.hopital || compte?.hopital || "Espace médecin"}
+              </p>
             </div>
           </div>
 
+          {/* Un administrateur accède aussi à l'espace clinique : il doit
+              pouvoir revenir à la file de validation sans se déconnecter.
+              Même gabarit que les liens de navigation (`w-5 h-5` dans un span
+              `text-[#209BBF]`, `gap-3 px-3.5`) : c'est la taille de la boîte
+              d'icône qui aligne le libellé sur celui des entrées de menu. */}
+          {compte?.role === "super_admin" && (
+            <Link
+              href="/admin"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#1D7893] hover:bg-[#EAF4F7] transition-colors duration-200"
+            >
+              <span className="text-[#209BBF]">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+              </span>
+              <span>Administration</span>
+            </Link>
+          )}
+
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors duration-200"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+            {/* Rouge conservé : la déconnexion reste la seule action
+                destructrice de la barre. Seule la boîte d'icône est
+                normalisée sur celle des entrées de menu. */}
+            <span className="text-red-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </span>
             <span>Se déconnecter</span>
           </button>
         </div>
@@ -151,7 +201,7 @@ export default function DashboardLayout({
           </button>
           <Image src={logoImg} alt="PancreaCare" width={120} height={35} className="h-7 w-auto object-contain" />
           <div className="w-9 h-9 rounded-full bg-[#1D7893] text-white flex items-center justify-center font-bold text-xs">
-            DR
+            {initiales}
           </div>
         </header>
 

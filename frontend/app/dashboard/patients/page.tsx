@@ -68,6 +68,9 @@ export interface PatientData {
   // A.7 Parcours Thérapeutique
   ligneTraitementActuelle?: number;
   reponseTraitementPrecedent?: string;
+  // Champ manquant dans l'interface alors que la vue détail l'affiche (ligne
+  // ~1021) : sans lui, `next build` échouait sur le contrôle de types.
+  reponseTraitementEnCours?: string;
   traitementsRecusTexte?: string;
   traitementsRecus?: string[];
   lignePrecedente?: string;
