@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -110,43 +111,105 @@ def _create_evaluation_and_decision(
     }
 
 
+def _trouver_patient_existant(
+    db: Session,
+    payload: FullPatientCreate,
+    medecin_id: int | None,
+) -> Patient | None:
+    """Patient déjà enregistré correspondant à l'identité saisie (nom, prénom,
+    date de naissance), parmi ceux accessibles au médecin connecté.
+
+    La recherche ignore la casse et les espaces de bord : une simple différence
+    de saisie ne doit pas créer un doublon. Le périmètre `patients_visibles`
+    garantit qu'on ne rattache jamais l'évaluation au patient d'un autre médecin.
+    """
+    return (
+        acces.patients_visibles(db, medecin_id)
+        .filter(
+            func.lower(func.trim(Patient.nom)) == payload.nom.strip().lower(),
+            func.lower(func.trim(Patient.prenom)) == payload.prenom.strip().lower(),
+            Patient.date_naissance == payload.date_naissance,
+        )
+        .order_by(Patient.id_patient.asc())
+        .first()
+    )
+
+
+def _dossier_accessible_du_patient(
+    db: Session,
+    patient: Patient,
+    medecin_id: int | None,
+) -> DossierPatient | None:
+    """Le plus ancien dossier du patient accessible au médecin connecté.
+
+    Reproduit le contrôle de `services.acces` : un dossier est visible si son
+    référent est ce médecin, ou s'il est sans référent (donnée historique).
+    """
+    query = db.query(DossierPatient).filter(
+        DossierPatient.id_patient == patient.id_patient
+    )
+    if medecin_id is not None:
+        query = query.filter(
+            (DossierPatient.id_medecin_referent == medecin_id)
+            | (DossierPatient.id_medecin_referent.is_(None))
+        )
+    return query.order_by(DossierPatient.id_dossier.asc()).first()
+
+
 def create_full_patient(
     db: Session,
     payload: FullPatientCreate,
     medecin_id: int | None = None,
 ) -> dict:
     """Crée en une seule transaction : patient + dossier + première évaluation
-    (et toutes ses données) + une décision (recommandation à générer)."""
-    patient = Patient(
-        nom=payload.nom,
-        prenom=payload.prenom,
-        date_naissance=payload.date_naissance,
-        sexe=payload.sexe,
-        telephone=payload.telephone,
-        email=payload.email,
-        adresse=payload.adresse,
-    )
-    db.add(patient)
-    try:
-        db.flush()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Impossible de créer le patient (données invalides ou en conflit).",
-        )
-    log_action(
-        db, medecin_id, "patient_create", "patient", patient.id_patient,
-        {"nom": payload.nom, "prenom": payload.prenom, "email": payload.email},
-    )
+    (et toutes ses données) + une décision (recommandation à générer).
 
-    dossier = DossierPatient(id_patient=patient.id_patient, id_medecin_referent=medecin_id)
-    db.add(dossier)
-    db.flush()
-    log_action(
-        db, medecin_id, "dossier_create", "dossier_patient", dossier.id_dossier,
-        {"id_patient": patient.id_patient},
-    )
+    Si l'identité saisie (nom, prénom, date de naissance) correspond à un patient
+    déjà accessible au médecin, ce patient est **réutilisé** : l'évaluation est
+    rattachée à son dossier existant au lieu de créer un doublon.
+    """
+    patient = _trouver_patient_existant(db, payload, medecin_id)
+
+    if patient is None:
+        patient = Patient(
+            nom=payload.nom,
+            prenom=payload.prenom,
+            date_naissance=payload.date_naissance,
+            sexe=payload.sexe,
+            telephone=payload.telephone,
+            email=payload.email,
+            adresse=payload.adresse,
+        )
+        db.add(patient)
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Impossible de créer le patient (données invalides ou en conflit).",
+            )
+        log_action(
+            db, medecin_id, "patient_create", "patient", patient.id_patient,
+            {"nom": payload.nom, "prenom": payload.prenom, "email": payload.email},
+        )
+    else:
+        log_action(
+            db, medecin_id, "patient_reuse", "patient", patient.id_patient,
+            {"nom": payload.nom, "prenom": payload.prenom, "email": payload.email},
+        )
+
+    dossier = _dossier_accessible_du_patient(db, patient, medecin_id)
+    if dossier is None:
+        dossier = DossierPatient(
+            id_patient=patient.id_patient, id_medecin_referent=medecin_id
+        )
+        db.add(dossier)
+        db.flush()
+        log_action(
+            db, medecin_id, "dossier_create", "dossier_patient", dossier.id_dossier,
+            {"id_patient": patient.id_patient},
+        )
 
     for ant in payload.antecedents:
         antecedent = AntecedentFamilial(id_dossier=dossier.id_dossier, **ant.model_dump())
