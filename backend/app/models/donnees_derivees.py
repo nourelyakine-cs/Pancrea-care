@@ -100,5 +100,5 @@ class DonneesDerivees(Base):
     critere_abc_b = Column(Boolean)
     critere_abc_c = Column(Boolean)
 
-    sous_categorie_abc = Column(String(15))
+    sous_categorie_abc = Column(String(30))
     justification_calcul = Column(Text)

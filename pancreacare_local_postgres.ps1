@@ -42,16 +42,24 @@ function Invoke-Sql {
     [System.IO.File]::WriteAllText(
         $tmp, "\set ON_ERROR_STOP on`n" + $Sql, $script:Utf8NoBom
     )
-    $sortie = & $psql -U postgres -h localhost -p $Port -d $Database -q -f $tmp 2>&1
+    # psql ecrit ses erreurs sur stderr ; sous $ErrorActionPreference = "Stop",
+    # toute sortie stderr deviendrait une erreur terminante. On isole stderr dans
+    # un fichier pour ne garder sur stdout que le resultat de la requete.
+    $errFile = [System.IO.Path]::GetTempFileName()
+    $prec = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $sortie = & $psql -U postgres -h localhost -p $Port -d $Database -tA -q -f $tmp 2>$errFile
     $code   = $LASTEXITCODE
-    Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
+    $ErrorActionPreference = $prec
+    $erreurs = Get-Content -LiteralPath $errFile -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $tmp, $errFile -Force -ErrorAction SilentlyContinue
 
     if (-not $Silence) {
-        foreach ($ligne in $sortie) {
-            if ("$ligne" -match "ERROR|FATAL") { Err $ligne }
+        foreach ($ligne in $erreurs) {
+            if ("$ligne" -match "ERROR|FATAL|ERREUR") { Err $ligne }
         }
     }
-    return $code
+    return (($sortie -join "`n").Trim())
 }
 
 function Find-Psql {
@@ -108,7 +116,7 @@ if (-not $AdminPassword) {
 $env:PGPASSWORD       = $AdminPassword
 $env:PGCLIENTENCODING = "UTF8"
 
-if ((Invoke-Sql "SELECT 1" -Silence) -ne 0) {
+if ((Invoke-Sql "SELECT 1" -Silence) -ne "1") {
     Err "Connexion refusee sur localhost:$Port avec le role 'postgres'."
     exit 3
 }
@@ -127,7 +135,7 @@ if (-not $DbPassword) {
     exit 4
 }
 
-if ((Invoke-Sql "SELECT 1 FROM pg_roles WHERE rolname = '$DbUser'" -Silence) -eq 0) {
+if ((Invoke-Sql "SELECT 1 FROM pg_roles WHERE rolname = '$DbUser'" -Silence) -ne "1") {
     Invoke-Sql "CREATE ROLE ""$DbUser"" LOGIN PASSWORD '$DbPassword'" -Silence | Out-Null
     Ok "role cree"
 } else {
@@ -137,7 +145,7 @@ if ((Invoke-Sql "SELECT 1 FROM pg_roles WHERE rolname = '$DbUser'" -Silence) -eq
 
 # --- 4. Base -----------------------------------------------------------------
 Etape "4/6  Base '$DbName'"
-if ((Invoke-Sql "SELECT 1 FROM pg_database WHERE datname = '$DbName'" -Silence) -eq 0) {
+if ((Invoke-Sql "SELECT 1 FROM pg_database WHERE datname = '$DbName'" -Silence) -ne "1") {
     # CREATE DATABASE ne peut pas s'executer dans une transaction.
     Invoke-Sql "CREATE DATABASE ""$DbName"" OWNER ""$DbUser"" ENCODING 'UTF8'" -Silence | Out-Null
     Ok "base creee"
@@ -148,23 +156,40 @@ if ((Invoke-Sql "SELECT 1 FROM pg_database WHERE datname = '$DbName'" -Silence) 
 # --- 5. Schema ---------------------------------------------------------------
 Etape "5/6  Schema de base"
 if (-not (Test-Path $Schema)) { Err "Introuvable : $Schema"; exit 5 }
-& $psql -U postgres -h localhost -p $Port -d $DbName -v ON_ERROR_STOP=1 -q -f $Schema 2>&1 |
-    ForEach-Object { if ("$_" -match "ERROR|FATAL") { Err $_ } }
-if ($LASTEXITCODE -ne 0) { Err "schema de base : echec"; exit 6 }
-Ok "schema de base applique"
+$dejaTables = (Invoke-Sql "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'" -Database $DbName -Silence).Trim()
+if ($dejaTables -ne "0") {
+    Ok "schema de base deja present ($dejaTables tables)"
+} else {
+    $prec = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $env:PGPASSWORD = $DbPassword
+    & $psql -U $DbUser -h localhost -p $Port -d $DbName -v ON_ERROR_STOP=1 -q -f $Schema 2>&1 |
+        ForEach-Object { if ("$_" -match "ERROR|FATAL|ERREUR") { Err $_ } }
+    $code = $LASTEXITCODE
+    $env:PGPASSWORD = $AdminPassword
+    $ErrorActionPreference = $prec
+    if ($code -ne 0) { Err "schema de base : echec"; exit 6 }
+    Ok "schema de base applique"
+}
 
 # --- 6. Migrations -----------------------------------------------------------
 Etape "6/6  Migrations"
+$prec = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 $migrations = @()
 if (Test-Path $MigDir) {
     $migrations = Get-ChildItem -Path $MigDir -Filter "*.sql" | Sort-Object Name
 }
+$env:PGPASSWORD = $DbPassword
 foreach ($m in $migrations) {
-    & $psql -U postgres -h localhost -p $Port -d $DbName -v ON_ERROR_STOP=1 -q -f $m.FullName 2>&1 |
-        ForEach-Object { if ("$_" -match "ERROR|FATAL") { Err $_ } }
-    if ($LASTEXITCODE -ne 0) { Err "migration en echec : $($m.Name)"; exit 7 }
+    & $psql -U $DbUser -h localhost -p $Port -d $DbName -v ON_ERROR_STOP=1 -q -f $m.FullName 2>&1 |
+        ForEach-Object { if ("$_" -match "ERROR|FATAL|ERREUR") { Err $_ } }
+    $code = $LASTEXITCODE
+    if ($code -ne 0) { $env:PGPASSWORD = $AdminPassword; $ErrorActionPreference = $prec; Err "migration en echec : $($m.Name)"; exit 7 }
     Ok $m.Name
 }
+$env:PGPASSWORD = $AdminPassword
+$ErrorActionPreference = $prec
 
 # --- Verification ------------------------------------------------------------
 Etape "Verification"
