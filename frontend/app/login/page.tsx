@@ -152,7 +152,9 @@ function AuthPageContent() {
           </Link>
 
           {/* CONTENEUR PRINCIPAL */}
-          <div className="relative w-full max-w-4xl min-h-[600px] max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+          <div className={`relative w-full max-w-4xl min-h-[600px] max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row ${
+            isSignUp ? "h-[90vh]" : ""
+          }`}>
             
             {/* SECTION FORMULAIRE (CENTRÉ DYNAMIKEMENT) */}
             <motion.div 
@@ -160,10 +162,11 @@ function AuthPageContent() {
               initial={{ opacity: 0, x: isSignUp ? 50 : -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
-              className={`w-full md:w-1/2 h-full p-6 sm:p-8 md:p-10 flex flex-col overflow-y-auto ${
-                isSignUp ? "justify-start md:order-2" : "justify-center md:order-1"
+              className={`w-full md:w-1/2 h-full min-h-0 flex flex-col ${
+                isSignUp ? "md:order-2" : "md:order-1"
               }`}
             >
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 md:p-10 flex flex-col">
               <div className="max-w-md mx-auto w-full my-auto flex flex-col justify-center">
                 
                 {/* LOGO (CONNEXION SEULEMENT) */}
@@ -310,17 +313,20 @@ function AuthPageContent() {
                     {isLoading ? "Veuillez patienter..." : (isSignUp ? "Envoyer ma demande" : "Se connecter")}
                   </button>
                 </form>
+              </div>
+              </div>
 
-                <div className="mt-4 text-center text-xs text-gray-600 md:hidden">
+              <div className="shrink-0 border-t border-gray-100 p-6 sm:p-8 md:p-10 pt-3 md:pt-4">
+                <div className="max-w-md mx-auto w-full text-center text-xs text-gray-600">
                   {isSignUp ? "Déjà un compte ?" : "Pas encore de compte ?"} {" "}
                   <button 
+                    type="button"
                     onClick={() => setIsSignUp(!isSignUp)} 
-                    className="text-[#1D7893] font-bold underline ml-1"
+                    className="text-[#1D7893] font-bold underline ml-1 cursor-pointer"
                   >
                     {isSignUp ? "Se connecter" : "S'inscrire"}
                   </button>
                 </div>
-
               </div>
             </motion.div>
 
