@@ -17,9 +17,11 @@ param(
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
 
-$Backend = "C:\Users\INFO\Desktop\CHU stage\Pancrea-care\backend"
-$Schema  = Join-Path $Backend "database\pancra_db_schema_supabase.sql"
-$MigDir  = Join-Path $Backend "database\migrations"
+# Chemins resolus par rapport a l'emplacement du script : le projet reste
+# portable, on ne code pas en dur le dossier de l'auteur.
+$Root    = $PSScriptRoot
+$Backend = Join-Path $Root "backend"
+$Schema  = Join-Path $Backend "database\schema_pancreacare.sql"
 
 $script:Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
@@ -77,7 +79,7 @@ function Find-Psql {
 }
 
 # --- 1. Localiser psql -------------------------------------------------------
-Etape "1/6  Verification de PostgreSQL"
+Etape "1/5  Verification de PostgreSQL"
 $psql = Find-Psql
 
 if (-not $psql -and $AutoInstall) {
@@ -99,7 +101,7 @@ Ok "psql : $psql"
 & $psql --version
 
 # --- 2. Serveur --------------------------------------------------------------
-Etape "2/6  Serveur"
+Etape "2/5  Serveur"
 $service = Get-Service -Name "postgresql*" -ErrorAction SilentlyContinue |
            Sort-Object Name -Descending | Select-Object -First 1
 
@@ -123,7 +125,7 @@ if ((Invoke-Sql "SELECT 1" -Silence) -ne "1") {
 Ok "connexion etablie sur localhost:$Port"
 
 # --- 3. Role applicatif ------------------------------------------------------
-Etape "3/6  Role applicatif '$DbUser'"
+Etape "3/5  Role applicatif '$DbUser'"
 $genere = $false
 if (-not $DbPassword) {
     $octets = New-Object byte[] 18
@@ -144,7 +146,7 @@ if ((Invoke-Sql "SELECT 1 FROM pg_roles WHERE rolname = '$DbUser'" -Silence) -ne
 }
 
 # --- 4. Base -----------------------------------------------------------------
-Etape "4/6  Base '$DbName'"
+Etape "4/5  Base '$DbName'"
 if ((Invoke-Sql "SELECT 1 FROM pg_database WHERE datname = '$DbName'" -Silence) -ne "1") {
     # CREATE DATABASE ne peut pas s'executer dans une transaction.
     Invoke-Sql "CREATE DATABASE ""$DbName"" OWNER ""$DbUser"" ENCODING 'UTF8'" -Silence | Out-Null
@@ -154,11 +156,13 @@ if ((Invoke-Sql "SELECT 1 FROM pg_database WHERE datname = '$DbName'" -Silence) 
 }
 
 # --- 5. Schema ---------------------------------------------------------------
-Etape "5/6  Schema de base"
+# Un seul fichier decrit l'etat final : database\schema_pancreacare.sql. Plus
+# de schema « de base » + migrations incrementales a rejouer.
+Etape "5/5  Schema"
 if (-not (Test-Path $Schema)) { Err "Introuvable : $Schema"; exit 5 }
 $dejaTables = (Invoke-Sql "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'" -Database $DbName -Silence).Trim()
 if ($dejaTables -ne "0") {
-    Ok "schema de base deja present ($dejaTables tables)"
+    Ok "schema deja present ($dejaTables tables) - rien a charger"
 } else {
     $prec = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
@@ -168,28 +172,9 @@ if ($dejaTables -ne "0") {
     $code = $LASTEXITCODE
     $env:PGPASSWORD = $AdminPassword
     $ErrorActionPreference = $prec
-    if ($code -ne 0) { Err "schema de base : echec"; exit 6 }
-    Ok "schema de base applique"
+    if ($code -ne 0) { Err "schema : echec"; exit 6 }
+    Ok "schema applique"
 }
-
-# --- 6. Migrations -----------------------------------------------------------
-Etape "6/6  Migrations"
-$prec = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-$migrations = @()
-if (Test-Path $MigDir) {
-    $migrations = Get-ChildItem -Path $MigDir -Filter "*.sql" | Sort-Object Name
-}
-$env:PGPASSWORD = $DbPassword
-foreach ($m in $migrations) {
-    & $psql -U $DbUser -h localhost -p $Port -d $DbName -v ON_ERROR_STOP=1 -q -f $m.FullName 2>&1 |
-        ForEach-Object { if ("$_" -match "ERROR|FATAL|ERREUR") { Err $_ } }
-    $code = $LASTEXITCODE
-    if ($code -ne 0) { $env:PGPASSWORD = $AdminPassword; $ErrorActionPreference = $prec; Err "migration en echec : $($m.Name)"; exit 7 }
-    Ok $m.Name
-}
-$env:PGPASSWORD = $AdminPassword
-$ErrorActionPreference = $prec
 
 # --- Verification ------------------------------------------------------------
 Etape "Verification"
