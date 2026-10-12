@@ -1,11 +1,40 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: pancrea_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pancreacare}
+      POSTGRES_USER: ${POSTGRES_USER:-pancreacare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pancreacare_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pancreacare} -d ${POSTGRES_DB:-pancreacare}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build: .
     container_name: pancrea_api
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pancreacare}:${POSTGRES_PASSWORD:-pancreacare_dev}@db:5432/${POSTGRES_DB:-pancreacare}
+      ENVIRONMENT: development
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
+      DISABLE_AUTH: ${DISABLE_AUTH:-False}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-a-remplacer-en-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     volumes:
       - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "python -m app.init_db && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
     restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -161,6 +161,32 @@ Pancrea-care/
 - **Python 3.11+**.
 - **Node.js 20+** (avec `npm`).
 
+### Variante Docker (backend + PostgreSQL)
+
+Docker Desktop doit être démarré et utiliser le moteur **Linux containers**. Dans
+PowerShell, placez-vous dans `backend` (le fichier Compose se trouve dans ce
+dossier), puis lancez :
+
+```powershell
+cd backend
+docker compose up --build
+```
+
+Cette configuration démarre PostgreSQL avec un volume persistant et l'API sur
+`http://localhost:8000`. Elle crée les tables applicatives au premier démarrage.
+Les identifiants PostgreSQL par défaut sont réservés au développement local ;
+définissez `POSTGRES_PASSWORD` et `JWT_SECRET` dans l'environnement avant toute
+utilisation hors poste local. Pour arrêter les conteneurs, utilisez
+`docker compose down`. Les données restent dans le volume `postgres_data`.
+
+L'erreur Windows `open //./pipe/dockerDesktopLinuxEngine: The system cannot
+find the file specified` indique que Docker CLI ne parvient pas à joindre le
+moteur Linux de Docker Desktop. Démarrez Docker Desktop, attendez que son état
+indique qu'il fonctionne, puis réessayez. Si nécessaire, dans Docker Desktop,
+choisissez **Switch to Linux containers**. Ce message intervient avant le
+démarrage du projet : modifier le code du dépôt ne peut pas démarrer le moteur
+Docker manquant.
+
 Vérifications rapides :
 
 ```powershell

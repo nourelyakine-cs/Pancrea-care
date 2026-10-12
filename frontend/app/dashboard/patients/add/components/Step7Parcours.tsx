@@ -26,15 +26,12 @@ export default function Step7Parcours({ data, updateData, submitting = false, er
     updateData({ [name]: updatedValue });
   };
 
-  const handleTraitementsRecusChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const textValue = e.target.value;
-    const arrayValues = textValue.split(",").map((s) => s.trim()).filter(Boolean);
-    const lastElement = arrayValues.length > 0 ? arrayValues[arrayValues.length - 1] : "";
-
+  const handleTraitementPrecedentChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
     updateData({
-      traitementsRecusTexte: textValue,
-      traitementsRecus: arrayValues,
-      lignePrecedente: lastElement,
+      traitementsRecusTexte: value,
+      traitementsRecus: value ? [value] : [],
+      lignePrecedente: value,
     });
   };
 
@@ -88,16 +85,19 @@ export default function Step7Parcours({ data, updateData, submitting = false, er
 
         {/* Traitements déjà reçus */}
         <div className="sm:col-span-2">
-          <label className="block text-gray-700 font-semibold mb-1.5">Traitement(s) précédent(s) (séparés par des virgules)</label>
-          <input
-            type="text"
+          <label className="block text-gray-700 font-semibold mb-1.5">Protocole précédent *</label>
+          <select
             name="traitementsRecusTexte"
-            placeholder="ex. Gemcitabine ou FOLFIRINOX"
-            value={data.traitementsRecusTexte ?? ""}
-            onChange={handleTraitementsRecusChange}
+            value={data.traitementsRecus?.[0] ?? ""}
+            onChange={handleTraitementPrecedentChange}
             required={Number(data.ligneTraitementActuelle || 1) >= 2}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#209BBF]"
-          />
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#209BBF]"
+          >
+            <option value="">Sélectionner un protocole</option>
+            <option value="gemcitabine">Gemcitabine</option>
+            <option value="folfirinox">FOLFIRINOX</option>
+            <option value="autre_protocole">Autre protocole</option>
+          </select>
           {data.lignePrecedente && (
             <span className="text-[10px] font-semibold text-[#1D7893] mt-1 block">
               Traitement précédent calculé : {data.lignePrecedente}
@@ -120,19 +120,6 @@ export default function Step7Parcours({ data, updateData, submitting = false, er
             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#209BBF]"
           />
           <span className="text-[10px] text-gray-400 mt-1 block">Seuil critique : ≥ 4 mois (R9)</span>
-        </div>
-
-        {/* Toxicité */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1.5">Toxicité résiduelle (Détails)</label>
-          <input
-            type="text"
-            name="detailsToxicite"
-            placeholder="ex. Neuropathie grade 2"
-            value={data.detailsToxicite ?? ""}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#209BBF]"
-          />
         </div>
 
         {/* ÉVALUATIONS BOOLEENNES */}
